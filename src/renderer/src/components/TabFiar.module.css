@@ -1,0 +1,160 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  flex: 1;
+}
+
+.fioMonto {
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 14px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fioMonto span:first-child {
+  font-size: 13px;
+  color: #5f5e5a;
+}
+
+.fioMonto span:last-child {
+  font-size: 32px;
+  font-weight: 500;
+  color: #f0efe8;
+  letter-spacing: -1px;
+}
+
+.numpad{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.numpad button {
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 11px;
+  padding: 14px 0;
+  font-size: 20px;
+  font-weight: 400;
+  color: #f0efe8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.08s, transform 0.06s, border-color 0.08s
+}
+
+.numpad button:hover {
+  background: #222;
+  border-color: #3a3a3a;
+}
+
+.numpad button:active {
+  background: #2e2e2e;
+  transform: scale(0.96);
+}
+
+.numpad .muted {
+  color: #5f5e5a;
+  font-size: 14px;
+}
+
+.input {
+  width: 100%;
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: #f0efe8;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s
+}
+
+.input:focus {
+  border-color: #7f77dd;
+}
+
+.input::placeholder {
+  color: #5f5e5a;
+}
+
+.sugerencias {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sugerenciasLabel {
+  font-size: 11px;
+  color: #5f5e5a;
+  letter-spacing: 0.4px;
+}
+
+.sugerenciasItem {
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 9px;
+  padding: 9px 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.sugerenciasItem:hover {
+  background: #1e1a3a;
+  border-color: #7f77dd
+}
+
+
+.sugerenciasItem.sel {
+  background: #1e1a3a;
+  border-color: #7f77dd;
+}
+
+.sugerenciasNombre {
+  font-size: 13px;
+  color: #f0efe8;
+}
+
+.sugerenciasDeuda {
+  font-size: 12px;
+  color: #e24b4a;
+}
+
+.sugerenciasNew {
+  font-size: 12px;
+  color: #7f77dd;
+}
+
+.btnFio {
+  width: 100%;
+  background: #534ab7;
+  border: none;
+  border-radius: 11px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  font-family: inherit;
+  transition: background 0.15s, opacity 0.15s, transform 0.06s;
+  margin-top: auto;
+}
+
+.btnFio:hover:not(:disabled) {
+  background: #3c3489;
+}
+
+.btnFio:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btnFio:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
