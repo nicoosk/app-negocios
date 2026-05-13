@@ -1,0 +1,116 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  flex: 1;
+}
+
+.montoCard {
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.label {
+  font-size: 11px;
+  color: #5f5e5a;
+  letter-spacing: 0.5px;
+}
+
+.montoDisplay {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.prefix {
+  font-size: 24px;
+  color: #5f5e5a;
+  font-weight: 300;
+}
+
+.value {
+  font-size: 48px;
+  font-weight: 500;
+  color: #f0efe8;
+  letter-spacing: -2px;
+}
+
+.cursor {
+  width: 3px;
+  height: 40px;
+  background: #1d9e75;
+  border-radius: 2px;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0 }
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.numpad button {
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 11px;
+  padding: 14px 0;
+  font-weight: 400;
+  color: #f0efe8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.08s, transform 0.06s, border-color 0.08s;
+  user-select: none;
+}
+
+.numpad button:hover {
+  background: #222;
+  border-color: #3a3a3a;
+}
+
+.numpad button:active {
+  background: #2e2e2e;
+  transform: scale(0.96);
+}
+
+.numpad .muted {
+  color: #5f5e5a;
+  font-size: 14px;
+}
+
+.btnVenta {
+  width: 100%;
+  background: #1d9e75;
+  border: none;
+  border-radius: 11px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, opacity 0.15s, transform 0.06s;
+}
+
+.btnVenta:hover:not(:disabled) {
+  background: #0f6e56
+}
+
+.btnVenta:active:not(:disabled) {
+  transform: scale(0.98)
+}
+
+.btnVenta:disabled {
+  opacity: 0.3;
+  cursor: not-allowed
+}

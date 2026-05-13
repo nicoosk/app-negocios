@@ -1,0 +1,133 @@
+import Database, { Database as DatabaseType } from 'better-sqlite3'
+import path from 'path'
+import { app } from 'electron'
+
+const dbPath = path.join(app.getPath('userData'), 'negocio.db')
+const db: DatabaseType = new Database(dbPath)
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS usuarios (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT UNIQUE NOT NULL,
+    pin           TEXT NOT NULL,
+    creado_en     TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS ventas (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    monto         INTEGER NOT NULL,
+    fecha         TEXT DEFAULT (date('now')),
+    hora          TEXT DEFAULT (time('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS fiados (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre        TEXT UNIQUE NOT NULL,
+    deuda_total   INTEGER DEFAULT 0,
+    creado_en     TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS fiados_detalle (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    fiado_id      INTEGER NOT NULL,
+    monto         INTEGER NOT NULL,
+    fecha         TEXT DEFAULT (date('now')),
+    hora          TEXT DEFAULT (time('now')),
+    FOREIGN KEY (fiado_id) REFERENCES fiados(id)
+  );
+`)
+
+const count = db.prepare('SELECT COUNT(*) as c FROM usuarios').get() as { c: number }
+console.log('Usuarios en DB:', count.c)
+if (count.c === 0) {
+  db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run('admin', '1234')
+  console.log('Usuario admin creado')
+}
+
+export function findUser(username: string, pin: string): unknown {
+  return db.prepare('SELECT * FROM usuarios WHERE username = ? AND pin = ?').get(username, pin)
+}
+
+export function createUser(username: string, pin: string): Database.RunResult {
+  return db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run(username, pin)
+}
+
+export function registrarVenta(monto: number): Database.RunResult {
+  return db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
+}
+
+export function getVentasHoy(): { monto: number; hora: string }[] {
+  return db
+    .prepare("SELECT monto, hora FROM ventas WHERE fecha = date('now') ORDER BY id DESC LIMIT 20")
+    .all() as { monto: number; hora: string }[]
+}
+
+export function getTotalVentasHoy(): { total: number; count: number } {
+  return db
+    .prepare(
+      "SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) as count FROM ventas WHERE fecha = date('now')"
+    )
+    .get() as { total: number; count: number }
+}
+
+export function buscarFiados(query: string): { id: number; nombre: string; deuda_total: number }[] {
+  return db.prepare('SELECT id, nombre, deuda_total FROM fiados ORDER BY nombre ASC').all() as {
+    id: number
+    nombre: string
+    deuda_total: number
+  }[]
+}
+
+export function registrarFio(nombre: string, monto: number): Database.RunResult {
+  const existing = db.prepare('SELECT id FROM fiados WHERE nombre = ?').get(nombre) as
+    | { id: number }
+    | undefined
+
+  if (existing) {
+    db.prepare('UPDATE fiados SET deuda_total = deuda_total + ? WHERE id = ?').run(
+      monto,
+      existing.id
+    )
+    return db
+      .prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)')
+      .run(existing.id, monto)
+  } else {
+    const result = db
+      .prepare('INSERT INTO fiados (nombre, deuda_total) VALUES (?, ?)')
+      .run(nombre, monto)
+    return db
+      .prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)')
+      .run(result.lastInsertRowid, monto)
+  }
+}
+
+export function getFiadosHoy(): { nombre: string; monto: number; hora: string }[] {
+  return db
+    .prepare(
+      `
+      SELECT f.nombre, fd.monto, fd.hora
+      FROM fiados_detalle fd
+      JOIN fiados f ON f.id = fd.fiado_id
+      WHERE fd.fecha = date('now')
+      ORDER BY fd.id DESC
+      LIMIT 10
+    `
+    )
+    .all() as { nombre: string; monto: number; hora: string }[]
+}
+
+export function getTotalFiadosHoy(): { total: number; deudores: number } {
+  return db
+    .prepare(
+      `
+    SELECT
+      COALESCE(SUM(fd.monto), 0) AS total,
+      COUNT(DISTINCT fd.fiado_id) AS deudores
+    FROM fiados_detalle fd
+    WHERE fd.fecha = date('now')
+    `
+    )
+    .get() as { total: number; deudores: number }
+}
+
+export default db
