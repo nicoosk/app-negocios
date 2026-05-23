@@ -4,7 +4,10 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
-      login: (username: string, pin: string) => Promise<{ ok: boolean; error?: string }>
+      login: (
+        username: string,
+        pin: string
+      ) => Promise<{ ok: boolean; username: string; error?: string }>
       ventas: {
         registrar: (monto: number) => Promise<{ ok: boolean }>
         hoy: () => Promise<{
@@ -21,6 +24,9 @@ declare global {
           total: number
           deudores: number
         }>
+        total: () => Promise<{ total: number }>
+        todos: () => Promise<{ id: number; nombre: string; deuda_total: number }[]>
+        abonar: (id: number, monto: number) => Promise<{ ok: boolean }>
       }
     }
   }
