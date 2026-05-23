@@ -1,43 +1,54 @@
-appId: com.electron.app
-productName: negocio-app
+appId: com.nicoosk.minegociodigital
+productName: Mi Negocio Digital
+copyright: Copyright © 2026
+
 directories:
   buildResources: build
+  output: dist
+
 files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+
 asarUnpack:
   - resources/**
+  # ↓ crítico: better-sqlite3 tiene código nativo y no funciona dentro de asar
+  - '**/node_modules/better-sqlite3/**'
+
 win:
-  executableName: negocio-app
+  executableName: mi-almacen
+  target:
+    - target: nsis        # instalador clásico de Windows
+      arch:
+        - x64
+
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: ${productName}
-  uninstallDisplayName: ${productName}
+  artifactName: MiAlmacen-Setup-${version}.exe
+  shortcutName: Mi Almacén
+  uninstallDisplayName: Mi Almacén
   createDesktopShortcut: always
+  createStartMenuShortcut: true
+  oneClick: false          # muestra el wizard de instalación
+  allowToChangeInstallationDirectory: true
+
 mac:
   entitlementsInherit: build/entitlements.mac.plist
+  identity: null        # ← deshabilita firma de código sin certificado
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
-linux:
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
-npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
+    - target: dmg
+      arch:
+        - arm64           # ← solo arm64 por ahora
+
+dmg:
+  artifactName: MiAlmacen-${version}.dmg
+
+npmRebuild: true           # reconstruye módulos nativos (better-sqlite3)
