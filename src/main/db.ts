@@ -118,6 +118,7 @@ export function getFiadosHoy(): { nombre: string; monto: number; hora: string }[
       FROM fiados_detalle fd
       JOIN fiados f ON f.id = fd.fiado_id
       WHERE fd.fecha = date('now')
+      AND fd.monto > 0
       ORDER BY fd.id DESC
       LIMIT 10
     `
@@ -134,13 +135,16 @@ export function getTotalFiadosHoy(): { total: number; deudores: number } {
       COUNT(DISTINCT fd.fiado_id) AS deudores
     FROM fiados_detalle fd
     WHERE fd.fecha = date('now')
+    AND fd.monto > 0
     `
     )
     .get() as { total: number; deudores: number }
 }
 
 export function getTotalFiados(): { total: number } {
-  return db.prepare(`SELECT COALESCE(COUNT(*), 0) AS total FROM fiados`).get() as { total: number }
+  return db
+    .prepare(`SELECT COALESCE(COUNT(*), 0) AS total FROM fiados f WHERE f.deuda_total > 0`)
+    .get() as { total: number }
 }
 
 export function abonarFiado(id: number, monto: number): Database.RunResult {
