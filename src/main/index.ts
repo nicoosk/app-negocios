@@ -3,9 +3,12 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
+  abonarFiado,
   buscarFiados,
   findUser,
   getFiadosHoy,
+  getTodosLosFiados,
+  getTotalFiados,
   getTotalFiadosHoy,
   getTotalVentasHoy,
   getVentasHoy,
@@ -57,6 +60,24 @@ ipcMain.handle('fiados:hoy', () => ({
   fios: getFiadosHoy(),
   ...getTotalFiadosHoy()
 }))
+
+ipcMain.handle('fiados:total', () => {
+  return getTotalFiados()
+})
+
+ipcMain.handle('fiados:todos', () => {
+  return getTodosLosFiados()
+})
+
+ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
+  try {
+    abonarFiado(id, monto)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false }
+  }
+})
 
 function createWindow(): void {
   // Create the browser window.

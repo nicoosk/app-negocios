@@ -3,7 +3,7 @@ import styles from './Login.module.css'
 import { JSX } from 'react/jsx-runtime'
 
 interface LoginProps {
-  onSuccess: () => void
+  onSuccess: (username: string) => void
 }
 
 export default function Login({ onSuccess }: LoginProps): JSX.Element {
@@ -22,7 +22,7 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
     const result = await window.api.login(username.trim(), pin)
     console.log(`¿Login correcto? ${result.ok}`)
     if (result.ok) {
-      onSuccess()
+      onSuccess(username)
     } else {
       console.error('Error al intentar hacer login')
       setError(result.error ?? 'Error desconocido')

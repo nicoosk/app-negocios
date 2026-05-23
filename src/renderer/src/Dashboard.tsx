@@ -2,6 +2,7 @@ import { JSX, useEffect, useState } from 'react'
 import TabVentas from './components/TabVentas'
 import TabFiar from './components/TabFiar'
 import styles from './Dashboard.module.css'
+import ModalDeudores from './components/ModalDeudores'
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
 interface Venta {
@@ -15,9 +16,13 @@ interface Fio {
   hora: string
 }
 
+interface DashboardProps {
+  username: string
+}
+
 type tabs = 'ventas' | 'fiar'
 
-export default function Dashboard(): JSX.Element {
+export default function Dashboard({ username }: DashboardProps): JSX.Element {
   const [tab, setTab] = useState<tabs>('ventas')
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
@@ -25,6 +30,7 @@ export default function Dashboard(): JSX.Element {
   const [totalFios, setTotalFios] = useState(0)
   const [deudores, setDeudores] = useState(0)
   const [fios, setFios] = useState<Fio[]>([])
+  const [modalDeudores, setModalDeudores] = useState<boolean>(false)
 
   const fecha = new Date().toLocaleDateString('es-CL', {
     weekday: 'long',
@@ -40,23 +46,27 @@ export default function Dashboard(): JSX.Element {
   }
 
   const recargarFios = async (): Promise<void> => {
-    const data = await window.api.fiados.hoy()
-    setTotalFios(data.total)
+    const [data, fiosTotales] = await Promise.all([
+      window.api.fiados.hoy(),
+      window.api.fiados.total()
+    ])
+    setTotalFios(fiosTotales.total)
     setDeudores(data.deudores)
     setFios(data.fios)
   }
 
   useEffect(() => {
     const cargar = async (): Promise<void> => {
-      const [dataVentas, dataFios] = await Promise.all([
+      const [dataVentas, dataFios, dataFiosTotales] = await Promise.all([
         window.api.ventas.hoy(),
-        window.api.fiados.hoy()
+        window.api.fiados.hoy(),
+        window.api.fiados.total()
       ])
       setTotalVentas(dataVentas.total)
       setCountVentas(dataVentas.count)
       setVentas(dataVentas.ventas)
       setTotalFios(dataFios.total)
-      setDeudores(dataFios.deudores)
+      setDeudores(dataFiosTotales.total)
       setFios(dataFios.fios)
     }
 
@@ -71,7 +81,7 @@ export default function Dashboard(): JSX.Element {
             <h2>Mi Almacén</h2>
             <span>{fecha}</span>
           </div>
-          <div className={styles.badge}>admin</div>
+          <div className={styles.badge}>{username}</div>
         </div>
 
         <div className={styles.tabs}>
@@ -107,7 +117,10 @@ export default function Dashboard(): JSX.Element {
             <span className={styles.statLabel}>FIADO HOY</span>
             <span className={`${styles.statValue} ${styles.purple}`}>{fmt(totalFios)}</span>
           </div>
-          <div className={styles.stat}>
+          <div
+            className={`${styles.stat} ${styles.clickable}`}
+            onClick={() => setModalDeudores(true)}
+          >
             <span className={styles.statLabel}>DEUDORES</span>
             <span className={`${styles.statValue} ${styles.red}`}>{deudores}</span>
           </div>
@@ -146,6 +159,12 @@ export default function Dashboard(): JSX.Element {
           )}
         </div>
       </div>
+      {modalDeudores && (
+        <ModalDeudores
+          onClose={() => setModalDeudores(false)}
+          onAbono={() => console.log('Abonado!')}
+        />
+      )}
     </div>
   )
 }

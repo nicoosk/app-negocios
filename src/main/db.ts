@@ -44,8 +44,17 @@ if (count.c === 0) {
   console.log('Usuario admin creado')
 }
 
-export function findUser(username: string, pin: string): unknown {
-  return db.prepare('SELECT * FROM usuarios WHERE username = ? AND pin = ?').get(username, pin)
+const testUserExists = db
+  .prepare('SELECT COUNT(*) as c FROM usuarios WHERE username = ?')
+  .get('Prueba') as { c: number }
+if (testUserExists.c === 0) {
+  db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run('Prueba', '0000')
+}
+
+export function findUser(username: string, pin: string): { username: string } {
+  return db.prepare('SELECT * FROM usuarios WHERE username = ? AND pin = ?').get(username, pin) as {
+    username: string
+  }
 }
 
 export function createUser(username: string, pin: string): Database.RunResult {
@@ -128,6 +137,25 @@ export function getTotalFiadosHoy(): { total: number; deudores: number } {
     `
     )
     .get() as { total: number; deudores: number }
+}
+
+export function getTotalFiados(): { total: number } {
+  return db.prepare(`SELECT COALESCE(COUNT(*), 0) AS total FROM fiados`).get() as { total: number }
+}
+
+export function abonarFiado(id: number, monto: number): Database.RunResult {
+  const deudor = db.prepare('SELECT deuda_total FROM fiados WHERE id = ?').get(id) as
+    | { deuda_total: number }
+    | undefined
+  if (!deudor) throw new Error('Deudor no encontrado')
+  const nuevaDeuda = Math.max(0, deudor.deuda_total - monto)
+  return db.prepare('UPDATE fiados SET deuda_total = ? WHERE id = ?').run(nuevaDeuda, id)
+}
+
+export function getTodosLosFiados(): { id: number; nombre: string; deuda_total: number }[] {
+  return db
+    .prepare('SELECT id, nombre, deuda_total FROM fiados ORDER BY deuda_total DESC')
+    .all() as { id: number; nombre: string; deuda_total: number }[]
 }
 
 export default db

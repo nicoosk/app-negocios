@@ -12,7 +12,10 @@ const api = {
     buscar: (query: string) => ipcRenderer.invoke('fiados:buscar', query),
     registrar: (nombre: string, monto: number) =>
       ipcRenderer.invoke('fiados:registrar', nombre, monto),
-    hoy: () => ipcRenderer.invoke('fiados:hoy')
+    hoy: () => ipcRenderer.invoke('fiados:hoy'),
+    total: () => ipcRenderer.invoke('fiados:total'),
+    todos: () => ipcRenderer.invoke('fiados:todos'),
+    abonar: (id: number, monto: number) => ipcRenderer.invoke('fiados:abonar', id, monto)
   }
 }
 
