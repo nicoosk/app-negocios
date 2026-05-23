@@ -16,7 +16,7 @@ function App(): React.JSX.Element {
         }}
       />
     )
-  return <Dashboard username={username} />
+  return <Dashboard username={username} onLogout={() => setLoggedIn(false)} />
 }
 
 export default App

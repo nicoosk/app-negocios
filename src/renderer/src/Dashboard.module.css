@@ -42,6 +42,15 @@
   font-size: 12px;
   padding: 4px 12px;
   border-radius: 20px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.badge:hover {
+  background: #e24b4a22;
+  border-color: #e23b4a;
+  color: #e24b4a;
 }
 
 .tabs {
