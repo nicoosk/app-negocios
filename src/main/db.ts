@@ -149,7 +149,14 @@ export function abonarFiado(id: number, monto: number): Database.RunResult {
     | undefined
   if (!deudor) throw new Error('Deudor no encontrado')
   const nuevaDeuda = Math.max(0, deudor.deuda_total - monto)
-  return db.prepare('UPDATE fiados SET deuda_total = ? WHERE id = ?').run(nuevaDeuda, id)
+  db.prepare('UPDATE fiados SET deuda_total = ? WHERE id = ?').run(nuevaDeuda, id)
+  return db.prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)').run(id, -monto)
+}
+
+export function getHistorialFiado(id: number): { monto: number; fecha: string; hora: string }[] {
+  return db
+    .prepare(`SELECT monto, fecha, hora FROM fiados_detalle WHERE fiado_id = ? ORDER BY id DESC`)
+    .all(id) as { monto: number; fecha: string; hora: string }[]
 }
 
 export function getTodosLosFiados(): { id: number; nombre: string; deuda_total: number }[] {

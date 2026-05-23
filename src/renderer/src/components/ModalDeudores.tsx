@@ -7,26 +7,51 @@ interface Deudor {
   deuda_total: number
 }
 
+interface Movimiento {
+  monto: number
+  fecha: string
+  hora: string
+}
+
 interface ModalDeudoresProps {
   onClose: () => void
   onAbono: () => void
 }
 
-const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
+const fmt = (n: number): string => '$' + Math.abs(n).toLocaleString('es-CL')
+
+function calcularSaldos(historial: Movimiento[]): number[] {
+  const rev = [...historial].reverse()
+  let saldo = 0
+  const saldos = rev.map((h) => {
+    saldo += h.monto
+    return saldo
+  })
+  return saldos.reverse()
+}
 
 export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps): JSX.Element {
   const [deudores, setDeudores] = useState<Deudor[]>([])
   const [expandido, setExpandido] = useState<number | null>(null)
   const [abono, setAbono] = useState('')
+  const [historial, setHistorial] = useState<Movimiento[]>([])
   const [cargando, setCargando] = useState(false)
 
   useEffect(() => {
     window.api.fiados.todos().then(setDeudores)
   }, [])
 
-  const toggleExpadir = (id: number): void => {
-    setExpandido((prev) => (prev === id ? null : id))
+  const toggleExpandir = async (id: number): Promise<void> => {
+    if (expandido === id) {
+      setExpandido(null)
+      setHistorial([])
+      setAbono('')
+      return
+    }
+    setExpandido(id)
     setAbono('')
+    const data = await window.api.fiados.historial(id)
+    setHistorial(data)
   }
 
   const handleAbonar = async (deudor: Deudor): Promise<void> => {
@@ -36,8 +61,12 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
     try {
       const result = await window.api.fiados.abonar(deudor.id, monto)
       if (result.ok) {
-        await window.api.fiados.todos().then(setDeudores)
-        setExpandido(null)
+        const [actualizados, data] = await Promise.all([
+          window.api.fiados.todos(),
+          window.api.fiados.historial(deudor.id)
+        ])
+        setDeudores(actualizados)
+        setHistorial(data)
         setAbono('')
         onAbono()
       }
@@ -47,6 +76,7 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
   }
 
   const total = deudores.reduce((s, d) => s + d.deuda_total, 0)
+  const saldos = calcularSaldos(historial)
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -54,17 +84,17 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
         <div className={styles.header}>
           <h3>Deudores</h3>
           <div className={styles.headerRight}>
-            <span className={styles.totalLabel}>Total: {fmt(total)}</span>
+            <span className={styles.totalLabel}>Total adeudado: {fmt(total)}</span>
             <button className={styles.btnClose} onClick={onClose}>
               ✕
             </button>
           </div>
         </div>
+
         <div className={styles.infoContainer}>
-          <div className={styles.infoIcon}>ⓘ</div>
+          <span className={styles.infoIcon}>ⓘ</span>
           <span className={styles.infoText}>
-            Aquí se muestra el total de deudores histórico registrados en esta máquina. Presiona
-            cada uno para gestionar su deuda
+            Historial completo de deudores. Presiona cada uno para gestionar su deuda.
           </span>
         </div>
 
@@ -79,33 +109,69 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
                 <div key={d.id}>
                   <div
                     className={`${styles.row} ${isExp ? styles.expanded : ''}`}
-                    onClick={() => toggleExpadir(d.id)}
+                    onClick={() => toggleExpandir(d.id)}
                   >
                     <span className={styles.nombre}>{d.nombre}</span>
-                    <span className={`${styles.deuda} ${saldado ? styles.saldado : ''}`}>
-                      {saldado ? 'Saldado ✓' : fmt(d.deuda_total)}
-                    </span>
+                    <div className={styles.rowRight}>
+                      <span className={`${styles.deuda} ${saldado ? styles.saldado : ''}`}>
+                        {saldado ? 'Saldado ✓' : fmt(d.deuda_total)}
+                      </span>
+                      <span className={`${styles.chevron} ${isExp ? styles.open : ''}`}>▼</span>
+                    </div>
                   </div>
 
                   {isExp && (
-                    <div className={styles.abonoPanel}>
-                      <input
-                        className={styles.abonoInput}
-                        type="number"
-                        placeholder="Monto del abono..."
-                        value={abono}
-                        onChange={(e) => setAbono(e.target.value)}
-                        min={1}
-                        max={d.deuda_total}
-                        autoFocus
-                      />
-                      <button
-                        className={styles.btnAbonar}
-                        disabled={!abono || parseInt(abono) <= 0 || cargando}
-                        onClick={() => handleAbonar(d)}
-                      >
-                        {cargando ? '...' : 'Abonar'}
-                      </button>
+                    <div className={styles.detailPanel}>
+                      <div className={styles.abonoRow}>
+                        <input
+                          className={styles.abonoInput}
+                          type="number"
+                          placeholder="Monto del abono..."
+                          value={abono}
+                          onChange={(e) => setAbono(e.target.value)}
+                          min={1}
+                          max={d.deuda_total}
+                          autoFocus
+                        />
+                        <button
+                          className={styles.btnAbonar}
+                          disabled={!abono || parseInt(abono) <= 0 || cargando}
+                          onClick={() => handleAbonar(d)}
+                        >
+                          {cargando ? '...' : 'Abonar'}
+                        </button>
+                      </div>
+
+                      <div className={styles.historialWrap}>
+                        <span className={styles.historialLabel}>HISTORIAL DE MOVIMIENTOS</span>
+                        {historial.length === 0 ? (
+                          <span className={styles.empty}>Sin movimientos</span>
+                        ) : (
+                          historial.map((h, i) => (
+                            <div key={i} className={styles.histItem}>
+                              <div className={styles.histLeft}>
+                                <span className={styles.histFecha}>
+                                  {h.fecha} · {h.hora.slice(0, 5)}
+                                </span>
+                                <span
+                                  className={`${styles.histTipo} ${h.monto > 0 ? styles.fio : styles.abonoTipo}`}
+                                >
+                                  {h.monto > 0 ? 'Fío' : 'Abono'}
+                                </span>
+                              </div>
+                              <div className={styles.histRight}>
+                                <span
+                                  className={`${styles.histMonto} ${h.monto > 0 ? styles.fio : styles.abonoTipo}`}
+                                >
+                                  {h.monto > 0 ? '+' : '-'}
+                                  {fmt(h.monto)}
+                                </span>
+                                <span className={styles.histSaldo}>Saldo: {fmt(saldos[i])}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
