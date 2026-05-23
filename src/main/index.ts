@@ -43,8 +43,8 @@ ipcMain.handle('ventas:hoy', () => ({
   ...getTotalVentasHoy()
 }))
 
-ipcMain.handle('fiados:buscar', (_e, query: string) => {
-  return buscarFiados(query)
+ipcMain.handle('fiados:buscar', () => {
+  return buscarFiados()
 })
 
 ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number) => {

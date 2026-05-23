@@ -79,7 +79,7 @@ export function getTotalVentasHoy(): { total: number; count: number } {
     .get() as { total: number; count: number }
 }
 
-export function buscarFiados(query: string): { id: number; nombre: string; deuda_total: number }[] {
+export function buscarFiados(): { id: number; nombre: string; deuda_total: number }[] {
   return db.prepare('SELECT id, nombre, deuda_total FROM fiados ORDER BY nombre ASC').all() as {
     id: number
     nombre: string
