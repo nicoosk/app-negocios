@@ -18,11 +18,12 @@ interface Fio {
 
 interface DashboardProps {
   username: string
+  onLogout: () => void
 }
 
 type tabs = 'ventas' | 'fiar'
 
-export default function Dashboard({ username }: DashboardProps): JSX.Element {
+export default function Dashboard({ username, onLogout }: DashboardProps): JSX.Element {
   const [tab, setTab] = useState<tabs>('ventas')
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
@@ -81,7 +82,9 @@ export default function Dashboard({ username }: DashboardProps): JSX.Element {
             <h2>Mi Almacén</h2>
             <span>{fecha}</span>
           </div>
-          <div className={styles.badge}>{username}</div>
+          <button className={styles.badge} onClick={onLogout}>
+            {username} · salir
+          </button>
         </div>
 
         <div className={styles.tabs}>
