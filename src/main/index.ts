@@ -7,6 +7,7 @@ import {
   buscarFiados,
   findUser,
   getFiadosHoy,
+  getHistorialFiado,
   getTodosLosFiados,
   getTotalFiados,
   getTotalFiadosHoy,
@@ -77,6 +78,10 @@ ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
     console.error(err)
     return { ok: false }
   }
+})
+
+ipcMain.handle('fiados:historial', (_e, id: number) => {
+  return getHistorialFiado(id)
 })
 
 function createWindow(): void {
