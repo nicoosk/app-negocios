@@ -51,6 +51,4 @@ mac:
 dmg:
   artifactName: MiNegocioDigital-${version}.dmg
 
-publish: never
-
 npmRebuild: true           # reconstruye módulos nativos (better-sqlite3)
