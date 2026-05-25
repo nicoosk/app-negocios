@@ -1,13 +1,13 @@
 {
-  "name": "negocio-app",
-  "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "name": "mi-negocio-digital",
+  "version": "v0.1.0-alpha",
+  "description": "Una aplicación para gestionar ventas y fíos de negocios convencionales",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "nicoosk",
+  "homepage": "https://minegociodigital.cl",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "electron-vite build && electron-builder",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -17,8 +17,8 @@
     "start": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:win": "npm run build && electron-builder --win --x64",
+    "build:mac": "electron-vite build && electron-builder --mac --arm64",
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {

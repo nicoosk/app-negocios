@@ -91,7 +91,7 @@ function createWindow(): void {
     height: 670,
     show: false,
     autoHideMenuBar: true,
-    title: 'Mi Almacén Digital',
+    title: 'Mi Negocio Digital',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
