@@ -20,7 +20,7 @@ asarUnpack:
   - '**/node_modules/better-sqlite3/**'
 
 win:
-  executableName: mi-almacen
+  executableName: mi-negocio-digital
   target:
     - target: nsis        # instalador clásico de Windows
       arch:
