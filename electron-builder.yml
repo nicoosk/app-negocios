@@ -20,7 +20,7 @@ asarUnpack:
   - '**/node_modules/better-sqlite3/**'
 
 win:
-  executableName: mi-negocio-digital
+  executableName: MiNegocioDigital
   target:
     - target: nsis        # instalador clásico de Windows
       arch:
@@ -49,6 +49,8 @@ mac:
         - arm64           # ← solo arm64 por ahora
 
 dmg:
-  artifactName: MiAlmacen-${version}.dmg
+  artifactName: MiNegocioDigital-${version}.dmg
+
+publish: never
 
 npmRebuild: true           # reconstruye módulos nativos (better-sqlite3)
