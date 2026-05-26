@@ -1,4 +1,4 @@
-import { JSX, useEffect, useState } from 'react'
+import { JSX, useEffect, useRef, useState } from 'react'
 import styles from './TabFiar.module.css'
 
 interface Fiado {
@@ -37,6 +37,8 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
     null
   )
   const [cargando, setCargando] = useState<boolean>(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [focusNombre, setFocusNombre] = useState<boolean>(false)
 
   const display = raw ? Number(raw).toLocaleString('es-CL') : '0'
   const ready = raw.length > 0 && seleccionado !== null
@@ -48,9 +50,16 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
   const press = (k: string): void => {
     if (raw.length >= 9) return
     setRaw((r) => r + k)
+    inputRef.current?.focus()
   }
-  const del = (): void => setRaw((r) => r.slice(0, -1))
-  const clear = (): void => setRaw('')
+  const del = (): void => {
+    setRaw((r) => r.slice(0, -1))
+    inputRef.current?.focus()
+  }
+  const clear = (): void => {
+    setRaw('')
+    inputRef.current?.focus()
+  }
 
   const buscar = async (val: string): Promise<void> => {
     setNombre(val)
@@ -68,11 +77,13 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
     setSeleccionado(fiado)
     setNombre(fiado.nombre)
     setSugerencias([])
+    inputRef.current?.focus()
   }
 
   const elegirNuevo = (): void => {
     setSeleccionado({ nombre, deuda_total: 0 })
     setSugerencias([])
+    inputRef.current?.focus()
   }
 
   const registrar = async (): Promise<void> => {
@@ -98,11 +109,32 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
       }
     } finally {
       setCargando(false)
+      inputRef.current?.focus()
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    e.preventDefault()
+    if (e.key >= '0' && e.key <= '9') press(e.key)
+    else if (e.key === 'Backspace') del()
+    else if (e.key === 'Escape') clear()
+    else if (e.key === 'Enter' && ready) registrar()
+  }
+
   return (
-    <div className={styles.wrap}>
+    <div
+      className={styles.wrap}
+      onClick={() => {
+        if (!focusNombre) inputRef.current?.focus()
+      }}
+    >
+      <input
+        ref={inputRef}
+        className={styles.inputHidden}
+        onKeyDown={handleKeyDown}
+        autoFocus
+        readOnly
+      />
       <div className={styles.fioMonto}>
         <span>Monto a fiar</span>
         <span>${display}</span>
@@ -110,15 +142,17 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
 
       <div className={styles.numpad}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => (
-          <button key={k} onClick={() => press(k)}>
+          <button key={k} onMouseDown={(e) => e.preventDefault()} onClick={() => press(k)}>
             {k}
           </button>
         ))}
-        <button className={styles.muted} onClick={del}>
+        <button className={styles.muted} onMouseDown={(e) => e.preventDefault()} onClick={del}>
           ⌫
         </button>
-        <button onClick={() => press('0')}>0</button>
-        <button className={styles.muted} onClick={clear}>
+        <button onMouseDown={(e) => e.preventDefault()} onClick={() => press('0')}>
+          0
+        </button>
+        <button className={styles.muted} onMouseDown={(e) => e.preventDefault()} onClick={clear}>
           C
         </button>
       </div>
@@ -129,6 +163,9 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
         placeholder="Nombre de la persona..."
         value={nombre}
         onChange={(e) => buscar(e.target.value)}
+        onFocus={() => setFocusNombre(true)}
+        onBlur={() => setFocusNombre(false)}
+        onClick={(e) => e.stopPropagation()}
         autoComplete="off"
       />
 
