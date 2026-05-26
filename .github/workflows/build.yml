@@ -53,6 +53,24 @@ jobs:
             - [ ] No hay bugs conocidos sin resolver
           pr_draft: false
 
+  sync-dev:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # ← se activa cuando hay push a main (post-merge)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sincronizar dev con main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout dev
+          git rebase origin/main
+          git push origin dev --force-with-lease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Solo al tagear: build completo + release
   build-mac:
     runs-on: macos-latest
