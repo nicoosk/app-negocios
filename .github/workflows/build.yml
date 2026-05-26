@@ -72,18 +72,18 @@ jobs:
   create-pr:
     needs: [build-mac, build-win]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'   # ← solo en push a dev, no en tags
+    if: github.ref == 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v4
 
       - name: Crear Pull Request hacia main
-        uses: peter-evans/create-pull-request@v6
+        uses: repo-sync/pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
-          branch: dev
-          title: '🚀 dev → main'
-          body: |
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_branch: dev
+          destination_branch: main
+          pr_title: '🚀 dev → main'
+          pr_body: |
             ## Build exitoso ✅
 
             Los builds de Mac y Windows completaron sin errores.
@@ -92,6 +92,7 @@ jobs:
             - [ ] Probé el build en Mac
             - [ ] Probé el build en Windows
             - [ ] No hay bugs conocidos sin resolver
+          pr_draft: false
 
   # La release solo se crea cuando hay una tag (en main)
   release:
