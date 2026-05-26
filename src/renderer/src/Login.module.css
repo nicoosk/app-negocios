@@ -128,3 +128,10 @@
   cursor: not-allowed;
 }
 
+.inputHidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  width: 0;
+}
