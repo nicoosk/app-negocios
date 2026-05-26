@@ -1,81 +1,41 @@
-name: Build y Release
+name: CI / Release
 
 on:
   push:
     branches:
-      - dev          # build de validación en dev
+      - dev
     tags:
-      - 'v*'         # release completa solo con tags
+      - 'v*'
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  build-mac:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Instalar dependencias
-        run: pnpm install
-
-      - name: Build Mac
-        run: pnpm build:mac
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Subir DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-dmg
-          path: dist/*.dmg
-
-  build-win:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Instalar dependencias
-        run: pnpm install
-
-      - name: Build Windows
-        run: pnpm build:win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Subir EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe
-          path: dist/*.exe
-
-  # Se crea el PR automático solo cuando el build viene de dev (no de una tag)
-  create-pr:
-    needs: [build-mac, build-win]
+  # En dev: solo validar que el código compila (rápido)
+  typecheck:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Instalar dependencias
+        run: pnpm install
+      - name: Typecheck
+        run: pnpm typecheck
 
+  create-pr:
+    needs: [typecheck]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+    steps:
+      - uses: actions/checkout@v4
       - name: Crear Pull Request hacia main
         uses: repo-sync/pull-request@v2
         with:
@@ -84,47 +44,88 @@ jobs:
           destination_branch: main
           pr_title: '🚀 dev → main'
           pr_body: |
-            ## Build exitoso ✅
+            ## Typecheck exitoso ✅
 
-            Los builds de Mac y Windows completaron sin errores.
+            El código compila sin errores de TypeScript.
 
             ### Checklist antes de mergear
-            - [ ] Probé el build en Mac
-            - [ ] Probé el build en Windows
+            - [ ] Revisé los cambios
             - [ ] No hay bugs conocidos sin resolver
           pr_draft: false
 
-  # La release solo se crea cuando hay una tag (en main)
+  # Solo al tagear: build completo + release
+  build-mac:
+    runs-on: macos-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Instalar dependencias
+        run: pnpm install
+      - name: Build Mac
+        run: pnpm build:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Subir DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-dmg
+          path: dist/*.dmg
+
+  build-win:
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Instalar dependencias
+        run: pnpm install
+      - name: Build Windows
+        run: pnpm build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Subir EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/*.exe
+
   release:
     needs: [build-mac, build-win]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')   # ← solo en tags
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-
-      - name: Bajar artefacto Mac
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: mac-dmg
           path: artifacts/mac
-
-      - name: Bajar artefacto Windows
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: windows-exe
           path: artifacts/win
-
-      - name: Crear Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
-          name: Mi Almacén ${{ github.ref_name }}
+          name: Mi Almacén ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
           body: |
-            ## ¿Qué hay en esta versión?
+            ## ¿Qué hay en esta versión?
 
-            ### Instalación
-            - **Mac**: descarga el `.dmg`, ábrelo y arrastra la app a Aplicaciones
-            - **Windows**: descarga el `.exe` y sigue el asistente de instalación
+            ### Instalación
+            - **Mac**: descarga el `.dmg`, ábrelo y arrastra la app a Aplicaciones
+            - **Windows**: descarga el `.exe` y sigue el asistente de instalación
 
             ### Notas
             - Los datos se guardan localmente en el computador
