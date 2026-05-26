@@ -1,12 +1,15 @@
-name: Build
+name: Build y Release
 
 on:
   push:
+    branches:
+      - dev          # build de validación en dev
     tags:
-      - 'v*'
+      - 'v*'         # release completa solo con tags
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   build-mac:
@@ -64,3 +67,70 @@ jobs:
         with:
           name: windows-exe
           path: dist/*.exe
+
+  # Se crea el PR automático solo cuando el build viene de dev (no de una tag)
+  create-pr:
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Crear Pull Request hacia main
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_branch: dev
+          destination_branch: main
+          pr_title: '🚀 dev → main'
+          pr_body: |
+            ## Build exitoso ✅
+
+            Los builds de Mac y Windows completaron sin errores.
+
+            ### Checklist antes de mergear
+            - [ ] Probé el build en Mac
+            - [ ] Probé el build en Windows
+            - [ ] No hay bugs conocidos sin resolver
+          pr_draft: false
+
+  # La release solo se crea cuando hay una tag (en main)
+  release:
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')   # ← solo en tags
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bajar artefacto Mac
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-dmg
+          path: artifacts/mac
+
+      - name: Bajar artefacto Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: artifacts/win
+
+      - name: Crear Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mi Almacén ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+          body: |
+            ## ¿Qué hay en esta versión?
+
+            ### Instalación
+            - **Mac**: descarga el `.dmg`, ábrelo y arrastra la app a Aplicaciones
+            - **Windows**: descarga el `.exe` y sigue el asistente de instalación
+
+            ### Notas
+            - Los datos se guardan localmente en el computador
+            - Ante cualquier problema, contactar al desarrollador
+          files: |
+            artifacts/mac/*.dmg
+            artifacts/win/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
