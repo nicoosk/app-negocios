@@ -47,12 +47,9 @@ export default function Dashboard({ username, onLogout }: DashboardProps): JSX.E
   }
 
   const recargarFios = async (): Promise<void> => {
-    const [data, fiosTotales] = await Promise.all([
-      window.api.fiados.hoy(),
-      window.api.fiados.total()
-    ])
-    setTotalFios(fiosTotales.total)
-    setDeudores(data.deudores)
+    const [data, dataFios] = await Promise.all([window.api.fiados.hoy(), window.api.fiados.total()])
+    setTotalFios(data.total)
+    setDeudores(dataFios.total)
     setFios(data.fios)
   }
 
