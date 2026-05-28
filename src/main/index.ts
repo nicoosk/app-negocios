@@ -19,6 +19,7 @@ import {
   registrarFio,
   registrarVenta
 } from './db'
+import { instalarUpdate } from './updater'
 
 ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   try {
@@ -112,6 +113,10 @@ ipcMain.handle('usuarios:eliminar', (_e, id: number) => {
     console.error(err)
     return { ok: false }
   }
+})
+
+ipcMain.handle('updater:instalar', () => {
+  instalarUpdate()
 })
 
 function createWindow(): void {
