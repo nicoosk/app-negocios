@@ -1,7 +1,7 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './PanelUsuarios.module.css'
 
-interface Usuario {
+export interface Usuario {
   id: number
   username: string
   creado_en: string

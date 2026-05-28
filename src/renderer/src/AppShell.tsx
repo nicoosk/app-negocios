@@ -3,15 +3,14 @@ import PanelVentas from './PanelVentas'
 import Dashboard from './Dashboard'
 import styles from './AppShell.module.css'
 import Sidebar, { PaginaActiva } from './Sidebar'
-import PanelUsuarios from './PanelUsuarios'
+import PanelUsuarios, { Usuario } from './PanelUsuarios'
 
 interface AppShellProps {
-  username: string
-  isAdmin: boolean
+  user: Usuario
   onLogout: () => void
 }
 
-export default function AppShell({ username, isAdmin, onLogout }: AppShellProps): JSX.Element {
+export default function AppShell({ user, onLogout }: AppShellProps): JSX.Element {
   const [paginaActiva, setPaginaActiva] = useState<PaginaActiva>('ventas')
 
   const renderContenido = (): JSX.Element => {
@@ -19,11 +18,11 @@ export default function AppShell({ username, isAdmin, onLogout }: AppShellProps)
       case 'dashboard':
         return <Dashboard />
       case 'ventas':
-        return <PanelVentas username={username} />
+        return <PanelVentas userId={user.id} username={user.username} />
       case 'usuarios':
         return <PanelUsuarios />
       default:
-        return <PanelVentas username={username} />
+        return <PanelVentas userId={user.id} username={user.username} />
     }
   }
 
@@ -32,7 +31,7 @@ export default function AppShell({ username, isAdmin, onLogout }: AppShellProps)
       <Sidebar
         paginaActiva={paginaActiva}
         onNavegar={setPaginaActiva}
-        isAdmin={isAdmin}
+        isAdmin={user.is_admin}
         onLogout={onLogout}
       />
 

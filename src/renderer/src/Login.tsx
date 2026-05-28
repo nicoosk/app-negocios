@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import styles from './Login.module.css'
 import { JSX } from 'react/jsx-runtime'
+import { Usuario } from './PanelUsuarios'
 
 interface LoginProps {
-  onSuccess: (username: string) => void
+  onSuccess: (user: Usuario) => void
 }
 
 export default function Login({ onSuccess }: LoginProps): JSX.Element {
@@ -30,8 +31,9 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
     console.log(`Buscando usuario '${username.trim()}' en bd...`)
     const result = await window.api.login(username.trim(), pin)
     console.log(`¿Login correcto? ${result.ok}`)
+    console.log(`Usuario: ${result.user}`)
     if (result.ok) {
-      onSuccess(username)
+      onSuccess(result.user)
     } else {
       console.error('Error al intentar hacer login')
       setError(result.error ?? 'Error desconocido')
