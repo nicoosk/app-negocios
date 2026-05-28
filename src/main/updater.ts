@@ -21,7 +21,20 @@ export function iniciarUpdater(window: BrowserWindow): void {
 
   autoUpdater.on('update-available', (info) => {
     console.log('[updater] update disponible: ', info.version)
-    enviar('updater:estado', { estado: 'disponible', version: info.version })
+
+    if (process.platform === 'darwin') {
+      enviar('updater:estado', {
+        estado: 'listo',
+        version: info.version,
+        releaseUrl: `https://github.com/nicoosk/app-negocios/releases/tag/v${info.version}`
+      })
+      return
+    }
+
+    enviar('updater:estado', {
+      estado: 'disponible',
+      version: info.version
+    })
     autoUpdater.downloadUpdate()
   })
 
@@ -42,11 +55,7 @@ export function iniciarUpdater(window: BrowserWindow): void {
     console.log('[updater] actualización lista, version descargada:', info.version)
     enviar('updater:estado', {
       estado: 'listo',
-      version: info.version,
-      releaseUrl:
-        process.platform === 'darwin'
-          ? `https://github.com/nicoosk/app-negocios/releases/tag/v${info.version}`
-          : undefined
+      version: info.version
     })
   })
 
