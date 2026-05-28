@@ -17,6 +17,12 @@ const api = {
     todos: () => ipcRenderer.invoke('fiados:todos'),
     abonar: (id: number, monto: number) => ipcRenderer.invoke('fiados:abonar', id, monto),
     historial: (id: number) => ipcRenderer.invoke('fiados:historial', id)
+  },
+  usuarios: {
+    listar: () => ipcRenderer.invoke('usuarios:listar'),
+    registrar: (username: string, pin: string, is_admin: boolean = false) =>
+      ipcRenderer.invoke('usuarios:registrar', username, pin, is_admin),
+    eliminar: (id: number) => ipcRenderer.invoke('usuarios:eliminar', id)
   }
 }
 

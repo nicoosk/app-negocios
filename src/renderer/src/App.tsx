@@ -1,6 +1,6 @@
-import Dashboard from './Dashboard'
 import Login from './Login'
 import { useState } from 'react'
+import AppShell from './AppShell'
 
 function App(): React.JSX.Element {
   // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
@@ -16,7 +16,13 @@ function App(): React.JSX.Element {
         }}
       />
     )
-  return <Dashboard username={username} onLogout={() => setLoggedIn(false)} />
+  return (
+    <AppShell
+      username={username}
+      isAdmin={username === 'admin'}
+      onLogout={() => setLoggedIn(false)}
+    />
+  )
 }
 
 export default App
