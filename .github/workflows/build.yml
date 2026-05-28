@@ -13,7 +13,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  # En dev: solo validar que el código compila (rápido)
   typecheck:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/dev'
@@ -48,21 +47,20 @@ jobs:
           pr_body: |
             ## Typecheck exitoso ✅
 
-            El código compila sin errores de TypeScript.
+            El código compila sin errores de TypeScript.
 
             ### Checklist antes de mergear
-            - [ ] Revisé los cambios
+            - [ ] Revisé los cambios
             - [ ] No hay bugs conocidos sin resolver
           pr_draft: false
 
   sync-dev:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # ← se activa cuando hay push a main (post-merge)
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Sincronizar dev con main
         run: |
           git config user.name "github-actions[bot]"
@@ -73,10 +71,83 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Solo al tagear: build completo + release
-  build-mac:
-    runs-on: macos-latest
+  # Paso 1: crear la release con el template ANTES de que electron-builder publique.
+  # Se crea como draft para que no sea visible hasta que los binarios estén listos.
+  create-release:
+    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    outputs:
+      upload_url: ${{ steps.crear.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Crear release con template
+        id: crear
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mi Negocio Digital ${{ github.ref_name }}
+          draft: true
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+          body: |
+            # 🚀 Mi Negocio Digital ${{ github.ref_name }}
+
+            Una nueva versión de **Mi Negocio Digital** ya está disponible.
+
+            ---
+
+            ## ✨ Highlights
+
+            *
+            *
+            *
+
+            ---
+
+            ## 📦 Instalación
+
+            ### Mac
+
+            Descarga el archivo `.dmg`, ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
+
+            ### Windows
+
+            Descarga el archivo `.exe` y sigue el asistente de instalación.
+
+            ---
+
+            ## ⚠️ Notas importantes
+
+            - Los datos se almacenan localmente en el dispositivo.
+            - Si macOS bloquea la app al abrirla:
+              - Click derecho → Abrir
+              - O ejecutar: `xattr -cr /Applications/"Mi Negocio Digital.app"`
+
+            ---
+
+            ## 🛠️ Cambios técnicos
+
+            *
+            *
+            *
+
+            ---
+
+            ## 🐞 Correcciones
+
+            *
+            *
+            *
+
+            ---
+
+            ❤️ Gracias por usar Mi Negocio Digital
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Paso 2: builds en paralelo, ambos esperan que la release draft ya exista.
+  # electron-builder la encuentra por tag y le adjunta los artefactos + latest.yml
+  build-mac:
+    needs: [create-release]
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -100,8 +171,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-win:
+    needs: [create-release]
     runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -119,83 +190,21 @@ jobs:
           $version = $env:GITHUB_REF_NAME -replace '^v', ''
           npm version $version --no-git-tag-version
         shell: pwsh
-      - name: Build Windows
+      - name: Build y publicar Windows
         run: pnpm build:win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  release:
+  # Paso 3: una vez que los dos builds terminaron y subieron sus artefactos,
+  # publicar la release (sacarla de draft).
+  publish-release:
     needs: [build-mac, build-win]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-      - uses: softprops/action-gh-release@v2
+      - name: Publicar release (sacar de draft)
+        uses: softprops/action-gh-release@v2
         with:
-          name: Mi Negocio Digital ${{ github.ref_name }}
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
-          body: |
-            body: |
-              # 🚀 Mi Negocio Digital ${{ github.ref_name }}
-
-              Una nueva versión de **Mi Negocio Digital** ya está disponible.
-
-              ---
-
-              ## ✨ Highlights
-
-              *
-              *
-              *
-
-              ---
-
-              ## 📦 Instalación
-
-              ### Mac
-
-              Descarga el archivo `.dmg`, ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
-
-              ### Windows
-
-              Descarga el archivo `.exe` y sigue el asistente de instalación.
-
-              ---
-
-              ## ⚠️ Notas importantes
-
-              * Los datos se almacenan localmente en el dispositivo.
-              * Si macOS bloquea la app al abrirla:
-
-                * Click derecho → Abrir
-                * O ejecutar:
-
-                  ```bash
-                  xattr -cr /Applications/"Mi Negocio Digital.app"
-                  ```
-
-              ---
-
-              ## 🛠️ Cambios técnicos
-
-              *
-              *
-              *
-
-              ---
-
-              ## 🐞 Correcciones
-
-              *
-              *
-              *
-
-              ---
-
-              ## ❤️ Gracias por usar Mi Negocio Digital
-
-          files: |
-            artifacts/mac/*.dmg
-            artifacts/win/*.exe
+          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
