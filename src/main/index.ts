@@ -19,7 +19,7 @@ import {
   registrarFio,
   registrarVenta
 } from './db'
-import { instalarUpdate } from './updater'
+import { iniciarUpdater, instalarUpdate } from './updater'
 
 ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   try {
@@ -138,6 +138,7 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+    iniciarUpdater(mainWindow)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
