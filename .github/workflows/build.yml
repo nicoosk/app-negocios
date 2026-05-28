@@ -24,7 +24,7 @@ jobs:
           version: 11.4.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 25.9.0
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
       - name: Instalar dependencias
@@ -84,7 +84,7 @@ jobs:
           version: 11.4.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 25.9.0
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
       - name: Instalar dependencias
@@ -109,7 +109,7 @@ jobs:
           version: 11.4.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 25.9.0
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
       - name: Instalar dependencias
