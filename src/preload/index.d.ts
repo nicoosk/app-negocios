@@ -45,6 +45,7 @@ declare global {
       updater: {
         onEstado: (cb: (payload: UpdaterPayload) => void) => void
         instalar: () => Promise<void>
+        abrirUrl: (url: string) => void
       }
     }
   }
