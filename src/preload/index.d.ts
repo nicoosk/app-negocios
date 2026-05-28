@@ -1,4 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import { Usuario } from '@renderer/PanelUsuarios'
 
 declare global {
   interface Window {
@@ -7,7 +8,7 @@ declare global {
       login: (
         username: string,
         pin: string
-      ) => Promise<{ ok: boolean; username: string; error?: string }>
+      ) => Promise<{ ok: boolean; user: Usuario; error?: string }>
       ventas: {
         registrar: (monto: number) => Promise<{ ok: boolean }>
         hoy: () => Promise<{
@@ -18,7 +19,7 @@ declare global {
       }
       fiados: {
         buscar: (query: string) => Promise<{ id: number; nombre: string; deuda_total: number }[]>
-        registrar: (nombre: string, monto: number) => Promise<{ ok: boolean }>
+        registrar: (nombre: string, monto: number, id_usuario: number) => Promise<{ ok: boolean }>
         hoy: () => Promise<{
           fios: { nombre: string; monto: number; hora: string }[]
           total: number
@@ -28,6 +29,17 @@ declare global {
         todos: () => Promise<{ id: number; nombre: string; deuda_total: number }[]>
         abonar: (id: number, monto: number) => Promise<{ ok: boolean }>
         historial: (id: number) => Promise<{ monto: number; fecha: string; hora: string }[]>
+      }
+      usuarios: {
+        listar: () => Promise<
+          { id: number; username: string; creado_en: string; is_admin: boolean }[]
+        >
+        registrar: (
+          username: string,
+          pin: string,
+          is_admin: boolean = false
+        ) => Promise<{ ok: boolean }>
+        eliminar: (id: number) => Promise<{ ok: boolean }>
       }
     }
   }
