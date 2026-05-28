@@ -1,0 +1,5 @@
+allowBuilds:
+  better-sqlite3: false
+  electron: false
+  electron-winstaller: false
+  esbuild: false
