@@ -23,7 +23,7 @@ import {
 ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   try {
     const user = findUser(username, pin)
-    if (user) return { ok: true }
+    if (user) return { ok: true, user }
     return { ok: false, error: 'Usuario o PIN incorrecto' }
   } catch (err) {
     console.error('Error en auth:login: ', err)
@@ -50,9 +50,9 @@ ipcMain.handle('fiados:buscar', () => {
   return buscarFiados()
 })
 
-ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number) => {
+ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number, id_usuario: number) => {
   try {
-    registrarFio(nombre, monto)
+    registrarFio(nombre, monto, id_usuario)
     return { ok: true }
   } catch (err) {
     console.error(err)

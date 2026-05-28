@@ -17,12 +17,13 @@ interface Fio {
 }
 
 interface DashboardProps {
+  userId: number
   username: string
 }
 
 type tabs = 'ventas' | 'fiar'
 
-export default function PanelVentas({ username }: DashboardProps): JSX.Element {
+export default function PanelVentas({ userId, username }: DashboardProps): JSX.Element {
   const [tab, setTab] = useState<tabs>('ventas')
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
@@ -50,8 +51,8 @@ export default function PanelVentas({ username }: DashboardProps): JSX.Element {
       window.api.fiados.hoy(),
       window.api.fiados.total()
     ])
-    setTotalFios(fiosTotales.total)
-    setDeudores(data.deudores)
+    setTotalFios(data.total)
+    setDeudores(fiosTotales.total)
     setFios(data.fios)
   }
 
@@ -100,7 +101,7 @@ export default function PanelVentas({ username }: DashboardProps): JSX.Element {
         </div>
 
         {tab === 'ventas' && <TabVentas onVentaRegistrada={recargarVentas} />}
-        {tab === 'fiar' && <TabFiar onFioRegistrado={recargarFios} />}
+        {tab === 'fiar' && <TabFiar userId={userId} onFioRegistrado={recargarFios} />}
       </div>
 
       <div className={styles.right}>
