@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import {
   abonarFiado,
   buscarFiados,
+  createUser,
+  deleteUser,
   findUser,
   getFiadosHoy,
   getHistorialFiado,
@@ -13,6 +15,7 @@ import {
   getTotalFiadosHoy,
   getTotalVentasHoy,
   getVentasHoy,
+  listUsers,
   registrarFio,
   registrarVenta
 } from './db'
@@ -20,7 +23,7 @@ import {
 ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   try {
     const user = findUser(username, pin)
-    if (user) return { ok: true }
+    if (user) return { ok: true, user }
     return { ok: false, error: 'Usuario o PIN incorrecto' }
   } catch (err) {
     console.error('Error en auth:login: ', err)
@@ -47,9 +50,9 @@ ipcMain.handle('fiados:buscar', () => {
   return buscarFiados()
 })
 
-ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number) => {
+ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number, id_usuario: number) => {
   try {
-    registrarFio(nombre, monto)
+    registrarFio(nombre, monto, id_usuario)
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -82,6 +85,33 @@ ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
 
 ipcMain.handle('fiados:historial', (_e, id: number) => {
   return getHistorialFiado(id)
+})
+
+ipcMain.handle('usuarios:listar', () => {
+  return listUsers()
+})
+
+ipcMain.handle(
+  'usuarios:registrar',
+  (_e, username: string, pin: string, is_admin: boolean = false) => {
+    try {
+      createUser(username, pin, is_admin)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false }
+    }
+  }
+)
+
+ipcMain.handle('usuarios:eliminar', (_e, id: number) => {
+  try {
+    deleteUser(id)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false }
+  }
 })
 
 function createWindow(): void {

@@ -8,6 +8,7 @@ interface Fiado {
 }
 
 interface TabFiarProps {
+  userId: number
   onFioRegistrado: () => void
 }
 
@@ -28,7 +29,7 @@ function similar(a: string, b: string): boolean {
   return matches / Math.max(na.length, 1) > 0.55
 }
 
-export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element {
+export default function TabFiar({ userId, onFioRegistrado }: TabFiarProps): JSX.Element {
   const [raw, setRaw] = useState('')
   const [nombre, setNombre] = useState('')
   const [, setTodos] = useState<Fiado[]>([])
@@ -97,7 +98,7 @@ export default function TabFiar({ onFioRegistrado }: TabFiarProps): JSX.Element 
     setSugerencias([])
     setCargando(true)
     try {
-      const result = await window.api.fiados.registrar(nombreGuardado, montoGuardado)
+      const result = await window.api.fiados.registrar(nombreGuardado, montoGuardado, userId)
       if (result.ok) {
         const actualizados = await window.api.fiados.buscar('')
         setTodos(actualizados)

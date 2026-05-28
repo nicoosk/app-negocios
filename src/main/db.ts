@@ -10,7 +10,8 @@ db.exec(`
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT UNIQUE NOT NULL,
     pin           TEXT NOT NULL,
-    creado_en     TEXT DEFAULT (datetime('now'))
+    creado_en     TEXT DEFAULT (datetime('now')),
+    is_admin      INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS ventas (
@@ -33,6 +34,8 @@ db.exec(`
     monto         INTEGER NOT NULL,
     fecha         TEXT DEFAULT (date('now')),
     hora          TEXT DEFAULT (time('now')),
+    id_usuario    INTEGER NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
     FOREIGN KEY (fiado_id) REFERENCES fiados(id)
   );
 `)
@@ -40,7 +43,11 @@ db.exec(`
 const count = db.prepare('SELECT COUNT(*) as c FROM usuarios').get() as { c: number }
 console.log('Usuarios en DB:', count.c)
 if (count.c === 0) {
-  db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run('admin', '1234')
+  db.prepare('INSERT INTO usuarios (username, pin, is_admin) VALUES (?, ?, ?)').run(
+    'admin',
+    '1234',
+    1
+  )
   console.log('Usuario admin creado')
 }
 
@@ -51,14 +58,47 @@ if (testUserExists.c === 0) {
   db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run('Prueba', '0000')
 }
 
-export function findUser(username: string, pin: string): { username: string } {
+export function findUser(
+  username: string,
+  pin: string
+): { id: number; username: string; creado_en: string; id_admin: boolean } {
   return db.prepare('SELECT * FROM usuarios WHERE username = ? AND pin = ?').get(username, pin) as {
+    id: number
     username: string
+    creado_en: string
+    id_admin: boolean
   }
 }
 
-export function createUser(username: string, pin: string): Database.RunResult {
-  return db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run(username, pin)
+export function createUser(
+  username: string,
+  pin: string,
+  is_admin: boolean = false
+): Database.RunResult {
+  console.log(`Creando usuario: '${username}', pin '${pin}', es admin: ${is_admin}`)
+  return db
+    .prepare('INSERT INTO usuarios (username, pin, is_admin) VALUES (?, ?, ?)')
+    .run(username, pin, is_admin ? 1 : 0)
+}
+
+export function listUsers(): {
+  id: number
+  username: string
+  creado_en: string
+  is_admin: boolean
+}[] {
+  return db
+    .prepare('SELECT id, username, creado_en, is_admin FROM usuarios ORDER BY username')
+    .all() as {
+    id: number
+    username: string
+    creado_en: string
+    is_admin: boolean
+  }[]
+}
+
+export function deleteUser(id: number): Database.RunResult {
+  return db.prepare('DELETE FROM usuarios WHERE id = ?').run(id)
 }
 
 export function registrarVenta(monto: number): Database.RunResult {
@@ -87,7 +127,11 @@ export function buscarFiados(): { id: number; nombre: string; deuda_total: numbe
   }[]
 }
 
-export function registrarFio(nombre: string, monto: number): Database.RunResult {
+export function registrarFio(
+  nombre: string,
+  monto: number,
+  id_usuario: number
+): Database.RunResult {
   const existing = db.prepare('SELECT id FROM fiados WHERE nombre = ?').get(nombre) as
     | { id: number }
     | undefined
@@ -98,15 +142,15 @@ export function registrarFio(nombre: string, monto: number): Database.RunResult 
       existing.id
     )
     return db
-      .prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)')
-      .run(existing.id, monto)
+      .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
+      .run(existing.id, monto, id_usuario)
   } else {
     const result = db
       .prepare('INSERT INTO fiados (nombre, deuda_total) VALUES (?, ?)')
       .run(nombre, monto)
     return db
-      .prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)')
-      .run(result.lastInsertRowid, monto)
+      .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
+      .run(result.lastInsertRowid, monto, id_usuario)
   }
 }
 
