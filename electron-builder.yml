@@ -52,6 +52,9 @@ mac:
     - target: dmg
       arch:
         - arm64           # ← solo arm64 por ahora
+    - target: zip
+      arch:
+        - arm64
 
 dmg:
   artifactName: MiNegocioDigital-${version}.dmg
