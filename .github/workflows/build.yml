@@ -90,14 +90,9 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install
       - name: Build Mac
-        run: pnpm build:mac
+        run: pnpm build:mac --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Subir DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-dmg
-          path: dist/*.dmg
 
   build-win:
     runs-on: windows-latest
@@ -115,14 +110,9 @@ jobs:
       - name: Instalar dependencias
         run: pnpm install
       - name: Build Windows
-        run: pnpm build:win
+        run: pnpm build:win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Subir EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe
-          path: dist/*.exe
 
   release:
     needs: [build-mac, build-win]
@@ -130,28 +120,70 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: mac-dmg
-          path: artifacts/mac
-      - uses: actions/download-artifact@v4
-        with:
-          name: windows-exe
-          path: artifacts/win
       - uses: softprops/action-gh-release@v2
         with:
-          name: Mi Almacén ${{ github.ref_name }}
+          name: Mi Negocio Digital ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
           body: |
-            ## ¿Qué hay en esta versión?
+            body: |
+              # 🚀 Mi Negocio Digital ${{ github.ref_name }}
 
-            ### Instalación
-            - **Mac**: descarga el `.dmg`, ábrelo y arrastra la app a Aplicaciones
-            - **Windows**: descarga el `.exe` y sigue el asistente de instalación
+              Una nueva versión de **Mi Negocio Digital** ya está disponible.
 
-            ### Notas
-            - Los datos se guardan localmente en el computador
-            - Ante cualquier problema, contactar al desarrollador
+              ---
+
+              ## ✨ Highlights
+
+              *
+              *
+              *
+
+              ---
+
+              ## 📦 Instalación
+
+              ### Mac
+
+              Descarga el archivo `.dmg`, ábrelo y arrastra la aplicación a la carpeta Aplicaciones.
+
+              ### Windows
+
+              Descarga el archivo `.exe` y sigue el asistente de instalación.
+
+              ---
+
+              ## ⚠️ Notas importantes
+
+              * Los datos se almacenan localmente en el dispositivo.
+              * Si macOS bloquea la app al abrirla:
+
+                * Click derecho → Abrir
+                * O ejecutar:
+
+                  ```bash
+                  xattr -cr /Applications/"Mi Negocio Digital.app"
+                  ```
+
+              ---
+
+              ## 🛠️ Cambios técnicos
+
+              *
+              *
+              *
+
+              ---
+
+              ## 🐞 Correcciones
+
+              *
+              *
+              *
+
+              ---
+
+              ## ❤️ Gracias por usar Mi Negocio Digital
+
           files: |
             artifacts/mac/*.dmg
             artifacts/win/*.exe

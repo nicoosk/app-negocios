@@ -26,8 +26,11 @@ const api = {
     eliminar: (id: number) => ipcRenderer.invoke('usuarios:eliminar', id)
   },
   updater: {
-    onEstado: (cb: (payload: UpdaterPayload) => void) =>
-      ipcRenderer.on('updater:estado', (_e, payload) => cb(payload)),
+    onEstado: (cb: (payload: UpdaterPayload) => void) => {
+      const handler = (_e: Electron.IpcRendererEvent, payload: UpdaterPayload): void => cb(payload)
+      ipcRenderer.on('updater:estado', handler)
+      return () => ipcRenderer.removeListener('updater:estado', handler)
+    },
     instalar: () => ipcRenderer.invoke('updater:instalar')
   }
 }
