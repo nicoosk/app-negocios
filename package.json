@@ -1,6 +1,6 @@
 {
   "name": "mi-negocio-digital",
-  "version": "v0.1.0-alpha",
+  "version": "0.1.0-alpha",
   "description": "Una aplicación para gestionar ventas y fíos de negocios convencionales",
   "main": "./out/main/index.js",
   "author": "nicoosk",
