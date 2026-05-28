@@ -1,5 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { Usuario } from '@renderer/PanelUsuarios'
+import { UpdaterPayload } from './types'
 
 declare global {
   interface Window {
@@ -40,6 +41,10 @@ declare global {
           is_admin: boolean = false
         ) => Promise<{ ok: boolean }>
         eliminar: (id: number) => Promise<{ ok: boolean }>
+      }
+      updater: {
+        onEstado: (cb: (payload: UpdaterPayload) => void) => void
+        instalar: () => Promise<void>
       }
     }
   }

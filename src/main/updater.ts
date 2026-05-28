@@ -1,0 +1,54 @@
+import { is } from '@electron-toolkit/utils'
+import { BrowserWindow } from 'electron'
+import { autoUpdater } from 'electron-updater'
+
+export function iniciarUpdater(window: BrowserWindow): void {
+  if (is.dev) return
+
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = true
+
+  const enviar = (canal: string, payload?: unknown): void => {
+    if (!window.isDestroyed()) {
+      window.webContents.send(canal, payload)
+    }
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    enviar('updater:estado', { estado: 'verificando' })
+  })
+
+  autoUpdater.on('update-available', (info) => {
+    enviar('updater:estado', { estado: 'disponible', version: info.version })
+    autoUpdater.downloadUpdate()
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    enviar('updater:estado', { estado: 'al-dia' })
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    enviar('updater:estado', {
+      estado: 'descargando',
+      porcentaje: Math.round(progress.percent)
+    })
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    enviar('updater:estado', {
+      estado: 'listo',
+      version: info.version
+    })
+  })
+
+  autoUpdater.on('error', (err) => {
+    console.error('updater error:', err)
+    enviar('updater:estado', { estado: 'error' })
+  })
+
+  autoUpdater.checkForUpdates()
+}
+
+export function instalarUpdate(): void {
+  autoUpdater.quitAndInstall()
+}

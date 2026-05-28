@@ -2,6 +2,11 @@ appId: com.nicoosk.minegociodigital
 productName: Mi Negocio Digital
 copyright: Copyright © 2026
 
+publish:
+  provider: github
+  owner: nicoosk
+  repo: app-negocios
+
 directories:
   buildResources: build
   output: dist

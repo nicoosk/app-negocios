@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { UpdaterPayload } from './types'
 
 // Custom APIs for renderer
 const api = {
@@ -23,6 +24,11 @@ const api = {
     registrar: (username: string, pin: string, is_admin: boolean = false) =>
       ipcRenderer.invoke('usuarios:registrar', username, pin, is_admin),
     eliminar: (id: number) => ipcRenderer.invoke('usuarios:eliminar', id)
+  },
+  updater: {
+    onEstado: (cb: (payload: UpdaterPayload) => void) =>
+      ipcRenderer.on('updater:estado', (_e, payload) => cb(payload)),
+    instalar: () => ipcRenderer.invoke('updater:instalar')
   }
 }
 
