@@ -150,7 +150,7 @@ export function registrarFio(
       .run(nombre, monto)
     return db
       .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
-      .run(result.lastInsertRowid, monto)
+      .run(result.lastInsertRowid, monto, id_usuario)
   }
 }
 
