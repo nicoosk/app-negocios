@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import {
   abonarFiado,
   buscarFiados,
+  createUser,
+  deleteUser,
   findUser,
   getFiadosHoy,
   getHistorialFiado,
@@ -13,6 +15,7 @@ import {
   getTotalFiadosHoy,
   getTotalVentasHoy,
   getVentasHoy,
+  listUsers,
   registrarFio,
   registrarVenta
 } from './db'
@@ -82,6 +85,33 @@ ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
 
 ipcMain.handle('fiados:historial', (_e, id: number) => {
   return getHistorialFiado(id)
+})
+
+ipcMain.handle('usuarios:listar', () => {
+  return listUsers()
+})
+
+ipcMain.handle(
+  'usuarios:registrar',
+  (_e, username: string, pin: string, is_admin: boolean = false) => {
+    try {
+      createUser(username, pin, is_admin)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false }
+    }
+  }
+)
+
+ipcMain.handle('usuarios:eliminar', (_e, id: number) => {
+  try {
+    deleteUser(id)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false }
+  }
 })
 
 function createWindow(): void {

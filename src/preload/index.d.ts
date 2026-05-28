@@ -29,6 +29,17 @@ declare global {
         abonar: (id: number, monto: number) => Promise<{ ok: boolean }>
         historial: (id: number) => Promise<{ monto: number; fecha: string; hora: string }[]>
       }
+      usuarios: {
+        listar: () => Promise<
+          { id: number; username: string; creado_en: string; is_admin: boolean }[]
+        >
+        registrar: (
+          username: string,
+          pin: string,
+          is_admin: boolean = false
+        ) => Promise<{ ok: boolean }>
+        eliminar: (id: number) => Promise<{ ok: boolean }>
+      }
     }
   }
 }
