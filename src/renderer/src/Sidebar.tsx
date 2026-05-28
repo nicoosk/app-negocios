@@ -31,11 +31,13 @@ function UpdaterBanner(): JSX.Element | null {
   const [descartado, setDescartado] = useState(false)
 
   useEffect(() => {
-    window.api.updater.onEstado((p) => {
-      if (p.estado === 'al-dia' || p.estado === 'verificando') return
+    const cleanup = window.api.updater.onEstado((p) => {
+      if (p.estado == 'al-dia' || p.estado === 'verificando') return
       setPayload(p)
       setDescartado(false)
     })
+
+    return cleanup
   }, [])
 
   if (!payload || descartado) return null
