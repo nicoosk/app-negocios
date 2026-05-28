@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, shell } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { UpdaterPayload } from './types'
 
@@ -31,7 +31,8 @@ const api = {
       ipcRenderer.on('updater:estado', handler)
       return () => ipcRenderer.removeListener('updater:estado', handler)
     },
-    instalar: () => ipcRenderer.invoke('updater:instalar')
+    instalar: () => ipcRenderer.invoke('updater:instalar'),
+    abrirUrl: (url: string) => shell.openExternal(url)
   }
 }
 

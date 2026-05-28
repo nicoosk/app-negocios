@@ -43,7 +43,11 @@ function UpdaterBanner(): JSX.Element | null {
   if (!payload || descartado) return null
 
   const handleInstalar = (): void => {
-    window.api.updater.instalar()
+    if (payload.releaseUrl) {
+      window.api.updater.abrirUrl(payload.releaseUrl)
+    } else {
+      window.api.updater.instalar()
+    }
   }
 
   const config: Record<
@@ -61,9 +65,9 @@ function UpdaterBanner(): JSX.Element | null {
       clase: styles.bannerDescargado
     },
     listo: {
-      texto: `v${payload.version} lista`,
-      sub: 'Reinicia para aplicar',
-      accion: 'Instalar ahora',
+      texto: `v${payload.version} disponible`,
+      sub: payload.releaseUrl ? 'Descarga requerida en MacOS' : 'Reinicia para aplicar',
+      accion: payload.releaseUrl ? 'Ver descarga' : 'Instalar ahora',
       clase: styles.bannerListo
     },
     error: {
