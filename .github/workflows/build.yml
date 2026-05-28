@@ -89,7 +89,12 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Instalar dependencias
         run: pnpm install
-      - name: Build Mac
+      - name: Sincronizar versión desde tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          npm version "$VERSION" --no-git-tag-version
+        shell: bash
+      - name: Build y publicar Mac
         run: pnpm build:mac --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -109,6 +114,11 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Instalar dependencias
         run: pnpm install
+      - name: Sincronizar versión desde tag
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          npm version $version --no-git-tag-version
+        shell: pwsh
       - name: Build Windows
         run: pnpm build:win --publish always
         env:
