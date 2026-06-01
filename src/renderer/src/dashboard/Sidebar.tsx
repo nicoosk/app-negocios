@@ -1,6 +1,6 @@
 import { JSX, SetStateAction, useEffect, useState } from 'react'
 import styles from './Sidebar.module.css'
-import { UpdaterPayload } from './types'
+import { UpdaterPayload } from '../types'
 
 export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios'
 

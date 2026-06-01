@@ -1,5 +1,6 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './Dashboard.module.css'
+import ModalDeudores from '@renderer/fiados/ModalDeudores'
 
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
@@ -28,6 +29,7 @@ export default function Dashboard(): JSX.Element {
   const [fios, setFios] = useState<Fio[]>([])
   const [deudores, setDeudores] = useState<Deudor[]>([])
   const [totalDeuda, setTotalDeuda] = useState(0)
+  const [modalDeudores, setModalDeudores] = useState<boolean>(false)
 
   const fecha = new Date().toLocaleDateString('es-CL', {
     weekday: 'long',
@@ -77,7 +79,10 @@ export default function Dashboard(): JSX.Element {
           <span className={styles.statSub}>{fios.length} fíos registrados</span>
         </div>
 
-        <div className={`${styles.statCard} ${styles.red}`}>
+        <div
+          className={`${styles.statCard} ${styles.red} ${styles.deudoresClickeable}`}
+          onClick={() => setModalDeudores(true)}
+        >
           <span className={styles.statLabel}>DEUDA TOTAL</span>
           <span className={styles.statValor}>{fmt(totalDeuda)}</span>
           <span className={styles.statSub}>
@@ -147,6 +152,13 @@ export default function Dashboard(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {modalDeudores && (
+        <ModalDeudores
+          onClose={() => setModalDeudores(false)}
+          onAbono={() => console.log('Abonado!')}
+        />
+      )}
     </div>
   )
 }
