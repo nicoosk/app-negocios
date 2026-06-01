@@ -1,8 +1,8 @@
 import { JSX, useEffect, useState } from 'react'
-import TabVentas from './components/TabVentas'
-import TabFiar from './components/TabFiar'
+import TabVentas from './TabVentas'
+import TabFiar from '../fiados/TabFiar'
 import styles from './PanelVentas.module.css'
-import ModalDeudores from './components/ModalDeudores'
+import ModalDeudores from '../fiados/ModalDeudores'
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
 interface Venta {

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import styles from './Login.module.css'
 import { JSX } from 'react/jsx-runtime'
-import { Usuario } from './PanelUsuarios'
+import { Usuario } from '../usuarios/PanelUsuarios'
 
 interface LoginProps {
   onSuccess: (user: Usuario) => void

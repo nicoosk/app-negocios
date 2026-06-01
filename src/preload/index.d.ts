@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { Usuario } from '@renderer/PanelUsuarios'
+import { Usuario } from '@renderer/usuarios/PanelUsuarios'
 import { UpdaterPayload } from './types'
 
 declare global {
