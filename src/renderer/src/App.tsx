@@ -1,7 +1,7 @@
-import Login from './Login'
+import Login from './login/Login'
 import { useState } from 'react'
-import AppShell from './AppShell'
-import { Usuario } from './PanelUsuarios'
+import AppShell from './shell/AppShell'
+import { Usuario } from './usuarios/PanelUsuarios'
 
 function App(): React.JSX.Element {
   // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')

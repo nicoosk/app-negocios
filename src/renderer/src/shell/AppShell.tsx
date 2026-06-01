@@ -1,9 +1,9 @@
 import { JSX, useState } from 'react'
-import PanelVentas from './PanelVentas'
-import Dashboard from './Dashboard'
+import PanelVentas from '../ventas/PanelVentas'
+import Dashboard from '../dashboard/Dashboard'
 import styles from './AppShell.module.css'
-import Sidebar, { PaginaActiva } from './Sidebar'
-import PanelUsuarios, { Usuario } from './PanelUsuarios'
+import Sidebar, { PaginaActiva } from '../dashboard/Sidebar'
+import PanelUsuarios, { Usuario } from '../usuarios/PanelUsuarios'
 
 interface AppShellProps {
   user: Usuario
