@@ -313,11 +313,11 @@ export function eliminarFiadoDetalle(detalle_id: number, fiado_id: number, monto
 export function convertirFiadoAVenta(detalle_id: number, fiado_id: number, monto: number): void {
   db.transaction(() => {
     db.prepare('DELETE FROM fiados_detalle WHERE id = ?').run(detalle_id)
-    db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_tottal - ?) WHERE id = ?').run(
+    db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total - ?) WHERE id = ?').run(
       monto,
       fiado_id
     )
     db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
-  })
+  })()
 }
 export default db

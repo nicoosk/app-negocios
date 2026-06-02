@@ -243,4 +243,52 @@
   background: #1a1228;
 }
 
+.sugerencias {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
+.sugerenciasLabel {
+  font-size: 11px;
+  color: #5f5e5a;
+  letter-spacing: 0.4px;
+}
+
+.sugerenciasItem {
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 9px;
+  padding: 9px 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.sugerenciasItem:hover {
+  background: #1e1a3a;
+  border-color: #7f77dd
+}
+
+
+.sugerenciasItem.sel {
+  background: #1e1a3a;
+  border-color: #7f77dd;
+}
+
+.sugerenciasNombre {
+  font-size: 13px;
+  color: #f0efe8;
+}
+
+.sugerenciasDeuda {
+  font-size: 12px;
+  color: #e24b4a;
+}
+
+.sugerenciasNew {
+  font-size: 12px;
+  color: #7f77dd;
+}

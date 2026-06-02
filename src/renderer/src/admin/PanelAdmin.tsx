@@ -29,6 +29,20 @@ interface PanelAdminProps {
 
 const fmt = (n: number): string => n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })
 
+function similar(a: string, b: string): boolean {
+  const norm = (s: string): string =>
+    s
+      .toLocaleLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+  const na = norm(a)
+  const nb = norm(b)
+  if (nb.includes(na) || na.includes(nb)) return true
+  let matches = 0
+  for (const c of na) if (nb.includes(c)) matches++
+  return matches / Math.max(na.length, 1) > 0.55
+}
+
 export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   const [tab, setTab] = useState<TabActiva>('ventas')
   const [ventas, setVentas] = useState<VentaAdmin[]>([])
@@ -38,7 +52,17 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   const [edicion, setEdicion] = useState<EstadoEdicion>({ tipo: 'ninguno' })
   const [montoEdicion, setMontoEdicion] = useState('')
   const [nombreConversion, setNombreConversion] = useState('')
-  const [deudores, setDeudores] = useState<{ id: number; nombre: string }[]>([])
+  const [deudores, setDeudores] = useState<{ id: number; nombre: string; deuda_total: number }[]>(
+    []
+  )
+  const [sugerenciasConversion, setSugerenciasConversion] = useState<
+    {
+      id: number
+      nombre: string
+      deuda_total: number
+    }[]
+  >([])
+  const [seleccionado, setSeleccionado] = useState(false)
 
   const cargarVentas = useCallback(async (): Promise<void> => {
     setCargando(true)
@@ -61,7 +85,7 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
 
   const cargarDeudores = useCallback(async (): Promise<void> => {
     const lista = await window.api.fiados.todos()
-    setDeudores(lista.map((f) => ({ id: f.id, nombre: f.nombre })))
+    setDeudores(lista)
   }, [])
 
   useEffect(() => {
@@ -71,7 +95,7 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
 
   const abrirEdicion = (registro: VentaAdmin | FiadoDetalleAdmin, tipo: TabActiva): void => {
     setMontoEdicion(String(registro.monto))
-    setNombreConversion('')
+    cambiarNombreConversion('')
     if (tipo === 'ventas') {
       setEdicion({ tipo: 'venta', registro: registro as VentaAdmin })
     } else {
@@ -79,7 +103,10 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
     }
   }
 
-  const cerrarEdicion = (): void => setEdicion({ tipo: 'ninguno' })
+  const cerrarEdicion = (): void => {
+    setEdicion({ tipo: 'ninguno' })
+    setSugerenciasConversion([])
+  }
 
   const confirmarEdicion = async (): Promise<void> => {
     const monto = parseInt(montoEdicion)
@@ -115,15 +142,22 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   }
 
   const confirmarConversion = async (): Promise<void> => {
+    console.log(
+      `Se confirmó conversión de ${edicion.tipo} a ${edicion.tipo === 'venta' ? 'fiado' : 'venta'}`
+    )
     if (edicion.tipo === 'venta') {
+      console.log('Entró a venta')
       if (!nombreConversion.trim()) return
       await window.api.admin.ventas.convertir(userId, edicion.registro.id, nombreConversion.trim())
       cargarVentas()
     } else if (edicion.tipo === 'fiado') {
+      console.log('Entró a fiado')
       const f = edicion.registro
-      await window.api.admin.fiados.convertir(userId, f.id, f.fiado_id, f.monto)
+      const result = await window.api.admin.fiados.convertir(userId, f.id, f.fiado_id, f.monto)
+      console.log('Resultado de conversión:', result.ok)
       cargarFiados()
     }
+    console.log('Cerrando modal de edición')
     cerrarEdicion()
   }
 
@@ -131,11 +165,20 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
     registro: VentaAdmin | FiadoDetalleAdmin,
     tipo: TabActiva
   ): Promise<void> => {
-    if (tipo === 'fiados') await cargarDeudores()
+    await cargarDeudores()
     setMontoEdicion(String(registro.monto))
-    setNombreConversion('')
+    cambiarNombreConversion('')
     if (tipo === 'ventas') setEdicion({ tipo: 'venta', registro: registro as VentaAdmin })
     else setEdicion({ tipo: 'fiado', registro: registro as FiadoDetalleAdmin })
+  }
+
+  const cambiarNombreConversion = (val: string): void => {
+    setNombreConversion(val)
+    if (val.length < 2) {
+      setSugerenciasConversion([])
+      return
+    }
+    setSugerenciasConversion(deudores.filter((d) => similar(val, d.nombre)))
   }
 
   return (
@@ -259,14 +302,43 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
                   type="text"
                   placeholder="Nombre del deudor"
                   value={nombreConversion}
-                  list="deudores-lista"
-                  onChange={(e) => setNombreConversion(e.target.value)}
+                  autoComplete="off"
+                  onChange={(e) => cambiarNombreConversion(e.target.value)}
                 />
-                <datalist id="deudores-lista">
-                  {deudores.map((d) => (
-                    <option key={d.id} value={d.nombre} />
-                  ))}
-                </datalist>
+                {(sugerenciasConversion.length > 0 ||
+                  (nombreConversion.length >= 2 && !seleccionado)) && (
+                  <div className={styles.sugerencias}>
+                    <span className={styles.sugerenciasLabel}>SUGERENCIAS</span>
+                    {sugerenciasConversion.map((d) => (
+                      <div
+                        key={d.id}
+                        className={`${styles.sugerenciasItem} ${nombreConversion === d.nombre ? styles.sugerenciasItemSel : ''}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setNombreConversion(d.nombre)
+                          setSeleccionado(true)
+                          setSugerenciasConversion([])
+                        }}
+                      >
+                        <span className={styles.sugerenciasNombre}>{d.nombre}</span>
+                        <span className={styles.sugerenciasDeuda}>
+                          {d.deuda_total > 0 ? `Debe ${fmt(d.deuda_total)}` : 'Sin deuda'}
+                        </span>
+                      </div>
+                    ))}
+                    {nombreConversion.length >= 2 &&
+                      !sugerenciasConversion.find((d) => d.nombre === nombreConversion) && (
+                        <div
+                          className={styles.sugerenciasItem}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setSugerenciasConversion([])}
+                        >
+                          <span className={styles.sugerenciasNombre}>{nombreConversion}</span>
+                          <span className={styles.sugerenciasNew}>+ Crear nuevo</span>
+                        </div>
+                      )}
+                  </div>
+                )}
               </>
             )}
 
