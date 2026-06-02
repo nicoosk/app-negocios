@@ -4,6 +4,7 @@ import Dashboard from '../dashboard/Dashboard'
 import styles from './AppShell.module.css'
 import Sidebar, { PaginaActiva } from '../dashboard/Sidebar'
 import PanelUsuarios, { Usuario } from '../usuarios/PanelUsuarios'
+import PanelAdmin from '@renderer/admin/PanelAdmin'
 
 interface AppShellProps {
   user: Usuario
@@ -21,6 +22,8 @@ export default function AppShell({ user, onLogout }: AppShellProps): JSX.Element
         return <PanelVentas userId={user.id} username={user.username} />
       case 'usuarios':
         return <PanelUsuarios />
+      case 'admin':
+        return <PanelAdmin userId={user.id} />
       default:
         return <PanelVentas userId={user.id} username={user.username} />
     }

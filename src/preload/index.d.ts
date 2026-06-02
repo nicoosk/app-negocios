@@ -2,6 +2,11 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import { Usuario } from '@renderer/usuarios/PanelUsuarios'
 import { UpdaterPayload } from './types'
 
+type DefaultResponse = {
+  ok: boolean
+  error?: string
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -46,6 +51,51 @@ declare global {
         onEstado: (cb: (payload: UpdaterPayload) => void) => void
         instalar: () => Promise<void>
         abrirUrl: (url: string) => void
+      }
+      admin: {
+        ventas: {
+          historial: (id_usuario: number) => Promise<{
+            ok: boolean
+            ventas?: { id: number; monto: number; fecha: string; hora: string }[]
+            error?: string
+          }>
+          editar: (id_usuario: number, id: number, monto: number) => Promise<DefaultResponse>
+          eliminar: (id_usuario: number, id: number) => Promise<DefaultResponse>
+          convertir: (id_usuario: number, id: number, nombre: string) => Promise<DefaultResponse>
+        }
+        fiados: {
+          historial: (id_usuario: number) => Promise<{
+            ok: boolea
+            fiados?: {
+              id: number
+              fiado_id: number
+              nombre: string
+              monto: number
+              fecha: string
+              hora: string
+            }[]
+            error?: string
+          }>
+          editar: (
+            id_usuario: number,
+            detalle_id: number,
+            fiado_id: number,
+            monto_anterior: number,
+            monto_nuevo: number
+          ) => Promise<DefaultResponse>
+          eliminar: (
+            id_usuario: number,
+            detalle_id: number,
+            fiado_id: number,
+            monto: number
+          ) => Promise<DefaultResponse>
+          convertir: (
+            id_usuario: number,
+            detalle_id: number,
+            fiado_id: number,
+            monto: number
+          ) => Promise<DefaultResponse>
+        }
       }
     }
   }

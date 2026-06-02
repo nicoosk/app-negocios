@@ -2,7 +2,7 @@ import { JSX, SetStateAction } from 'react'
 import styles from './Sidebar.module.css'
 import UpdaterBanner from './UpdateBanner'
 
-export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios'
+export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios' | 'admin'
 
 interface SidebarProps {
   paginaActiva: PaginaActiva
@@ -23,7 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icono: '▦' },
   { id: 'ventas', label: 'Panel de ventas', icono: '⊟' },
   { id: 'inventario', label: 'Inventario', icono: '⊞', proximamente: true },
-  { id: 'usuarios', label: 'Usuarios', icono: '◎', soloAdmin: true }
+  { id: 'usuarios', label: 'Usuarios', icono: '◎', soloAdmin: true },
+  { id: 'admin', label: 'Administrar ventas', icono: '⚙', soloAdmin: true }
 ]
 
 export default function Sidebar({
