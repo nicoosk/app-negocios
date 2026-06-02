@@ -191,14 +191,16 @@ export function getTotalFiados(): { total: number } {
     .get() as { total: number }
 }
 
-export function abonarFiado(id: number, monto: number): Database.RunResult {
+export function abonarFiado(id: number, monto: number, id_usuario: number): Database.RunResult {
   const deudor = db.prepare('SELECT deuda_total FROM fiados WHERE id = ?').get(id) as
     | { deuda_total: number }
     | undefined
   if (!deudor) throw new Error('Deudor no encontrado')
   const nuevaDeuda = Math.max(0, deudor.deuda_total - monto)
   db.prepare('UPDATE fiados SET deuda_total = ? WHERE id = ?').run(nuevaDeuda, id)
-  return db.prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)').run(id, -monto)
+  return db
+    .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
+    .run(id, -monto, id_usuario)
 }
 
 export function getHistorialFiado(id: number): { monto: number; fecha: string; hora: string }[] {
@@ -243,7 +245,7 @@ export function editarVenta(id: number, monto: number): Database.RunResult {
 }
 
 export function eliminarVenta(id: number): Database.RunResult {
-  return db.prepare('DELE FROM ventas WHERE id = ?').run(id)
+  return db.prepare('DELETE FROM ventas WHERE id = ?').run(id)
 }
 
 export function convertirVentaAFiado(id: number, nombre: string, id_usuario: number): void {
@@ -268,9 +270,10 @@ export function getFiadosDetalleAdmin(limit: number = 100): {
 }[] {
   return db
     .prepare(
-      `SELECT fd.id, fd.fiado_id, f.nombre, fd.monto, fd.fecha, fd.hora
+      `SELECT fd.id, fd.fiado_id, f.nombre, fd.monto, fd.fecha, fd.hora, u.username
         FROM fiados_detalle fd
         JOIN fiados f ON f.id = fd.fiado_id
+        JOIN usuarios u ON u.id = fd.id_usuario
         WHERE fd.monto > 0
         ORDER BY fd.id DESC
         LIMIT ?`
@@ -282,6 +285,7 @@ export function getFiadosDetalleAdmin(limit: number = 100): {
     monto: number
     fecha: string
     hora: string
+    username: string
   }[]
 }
 

@@ -16,6 +16,7 @@ interface FiadoDetalleAdmin {
   monto: number
   fecha: string
   hora: string
+  username: string
 }
 
 type EstadoEdicion =
@@ -89,8 +90,11 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   }, [])
 
   useEffect(() => {
-    if (tab === 'ventas') cargarVentas()
-    else cargarFiados()
+    const cargar = async (): Promise<void> => {
+      if (tab === 'ventas') cargarVentas()
+      else cargarFiados()
+    }
+    cargar()
   }, [tab, cargarVentas, cargarFiados])
 
   const abrirEdicion = (registro: VentaAdmin | FiadoDetalleAdmin, tipo: TabActiva): void => {
@@ -186,17 +190,27 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
       <h2 className={styles.titulo}>Administrar registros</h2>
 
       <div className={styles.tabs}>
+        <div className={styles.tabsWrapper}>
+          <button
+            className={`${styles.tab} ${tab === 'ventas' ? styles.tabActivo : ''}`}
+            onClick={() => setTab('ventas')}
+          >
+            Ventas
+          </button>
+          <button
+            className={`${styles.tab} ${tab === 'fiados' ? styles.tabActivo : ''}`}
+            onClick={() => setTab('fiados')}
+          >
+            Fiados
+          </button>
+        </div>
         <button
-          className={`${styles.tab} ${tab === 'ventas' ? styles.tabActivo : ''}`}
-          onClick={() => setTab('ventas')}
+          className={styles.btnRecargar}
+          onClick={() => {
+            tab === 'ventas' ? cargarVentas() : cargarFiados()
+          }}
         >
-          Ventas
-        </button>
-        <button
-          className={`${styles.tab} ${tab === 'fiados' ? styles.tabActivo : ''}`}
-          onClick={() => setTab('fiados')}
-        >
-          Fiados
+          Recargar
         </button>
       </div>
 
@@ -209,7 +223,8 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
             <thead>
               <tr>
                 {tab === 'fiados' && <th>Deudor</th>}
-                <th>Monto</th>
+                {tab === 'fiados' && <th>Fiado por</th>}
+                <th>{tab === 'fiados' ? 'Monto fiado' : 'Venta registrada'}</th>
                 <th>Fecha</th>
                 <th>Hora</th>
                 <th>Acciones</th>
@@ -245,6 +260,7 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
                 fiados.map((f) => (
                   <tr key={f.id}>
                     <td>{f.nombre}</td>
+                    <td>{f.username}</td>
                     <td>{fmt(f.monto)}</td>
                     <td>{f.fecha}</td>
                     <td>{f.hora}</td>

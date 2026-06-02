@@ -83,9 +83,9 @@ ipcMain.handle('fiados:todos', () => {
   return getTodosLosFiados()
 })
 
-ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
+ipcMain.handle('fiados:abonar', (_e, id: number, monto: number, id_usuario: number) => {
   try {
-    abonarFiado(id, monto)
+    abonarFiado(id, monto, id_usuario)
     return { ok: true }
   } catch (err) {
     console.error(err)

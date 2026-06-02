@@ -19,8 +19,13 @@
 
 .tabs {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
   margin-bottom: 20px;
+}
+
+.tabsWrapper {
+  display: flex;
+  gap: 8px
 }
 
 .tab {
@@ -33,13 +38,17 @@
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
 }
 
 .tab:hover {
   background: #151515;
   border-color: #2d2d2d;
   color: #eee;
+}
+
+.tab:active {
+  transform: scale(0.95);
 }
 
 .tabActivo {
@@ -291,4 +300,26 @@
 .sugerenciasNew {
   font-size: 12px;
   color: #7f77dd;
+}
+
+.btnRecargar {
+  padding: 8px 18px;
+  background: #3a2a10;
+  border-radius: 8px;
+  border: 1px solid #fbbe246b;
+  color: #fbbe24ba;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.btnRecargar:hover {
+  background: #563d17;
+  border-color: #fbbe2494;
+  color: #fbbe248a
+}
+
+.btnRecargar:active {
+  transform: scale(0.95);
 }

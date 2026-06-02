@@ -162,6 +162,7 @@ export default function PanelVentas({ userId, username }: DashboardProps): JSX.E
       </div>
       {modalDeudores && (
         <ModalDeudores
+          userId={userId}
           onClose={() => setModalDeudores(false)}
           onAbono={() => console.log('Abonado!')}
         />

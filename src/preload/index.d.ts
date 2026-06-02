@@ -33,7 +33,7 @@ declare global {
         }>
         total: () => Promise<{ total: number }>
         todos: () => Promise<{ id: number; nombre: string; deuda_total: number }[]>
-        abonar: (id: number, monto: number) => Promise<{ ok: boolean }>
+        abonar: (id: number, monto: number, id_usuario: number) => Promise<{ ok: boolean }>
         historial: (id: number) => Promise<{ monto: number; fecha: string; hora: string }[]>
       }
       usuarios: {
@@ -73,6 +73,7 @@ declare global {
               monto: number
               fecha: string
               hora: string
+              username: string
             }[]
             error?: string
           }>
