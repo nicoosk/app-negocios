@@ -219,10 +219,10 @@ ipcMain.handle(
 
 ipcMain.handle(
   'admin:fiados:convertir',
-  (_e, id_usuario: number, detalle_id: number, fiados_id: number, monto: number) => {
+  (_e, id_usuario: number, detalle_id: number, fiado_id: number, monto: number) => {
     if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
     try {
-      convertirFiadoAVenta(detalle_id, fiados_id, monto)
+      convertirFiadoAVenta(detalle_id, fiado_id, monto)
       return { ok: true }
     } catch (err) {
       console.error(err)
