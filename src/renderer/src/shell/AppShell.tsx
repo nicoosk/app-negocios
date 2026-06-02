@@ -17,7 +17,7 @@ export default function AppShell({ user, onLogout }: AppShellProps): JSX.Element
   const renderContenido = (): JSX.Element => {
     switch (paginaActiva) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard userId={user.id} />
       case 'ventas':
         return <PanelVentas userId={user.id} username={user.username} />
       case 'usuarios':
