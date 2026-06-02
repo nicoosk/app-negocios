@@ -16,7 +16,8 @@ const api = {
     hoy: () => ipcRenderer.invoke('fiados:hoy'),
     total: () => ipcRenderer.invoke('fiados:total'),
     todos: () => ipcRenderer.invoke('fiados:todos'),
-    abonar: (id: number, monto: number) => ipcRenderer.invoke('fiados:abonar', id, monto),
+    abonar: (id: number, monto: number, id_usuario: number) =>
+      ipcRenderer.invoke('fiados:abonar', id, monto, id_usuario),
     historial: (id: number) => ipcRenderer.invoke('fiados:historial', id)
   },
   usuarios: {
