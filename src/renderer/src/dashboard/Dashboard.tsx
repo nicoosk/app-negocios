@@ -21,7 +21,11 @@ interface Deudor {
   deuda_total: number
 }
 
-export default function Dashboard(): JSX.Element {
+interface DashboardProps {
+  userId: number
+}
+
+export default function Dashboard({ userId }: DashboardProps): JSX.Element {
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -155,6 +159,7 @@ export default function Dashboard(): JSX.Element {
 
       {modalDeudores && (
         <ModalDeudores
+          userId={userId}
           onClose={() => setModalDeudores(false)}
           onAbono={() => console.log('Abonado!')}
         />
