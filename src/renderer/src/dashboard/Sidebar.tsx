@@ -71,7 +71,7 @@ export default function Sidebar({
       </ul>
 
       <div className={styles.footer}>
-        <UpdaterBanner />
+        <UpdaterBanner onSidebar={true} />
         <button className={styles.btnLogout} onClick={onLogout}>
           <span className={styles.navIcono}>⏻</span>
           <span className={styles.navLabel}>Cerrar sesión</span>

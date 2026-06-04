@@ -51,6 +51,7 @@ declare global {
         onEstado: (cb: (payload: UpdaterPayload) => void) => void
         instalar: () => Promise<void>
         abrirUrl: (url: string) => void
+        notas: (version: string) => Promise<string | null>
       }
       admin: {
         ventas: {

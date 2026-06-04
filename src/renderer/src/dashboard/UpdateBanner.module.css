@@ -99,3 +99,60 @@
 .bannerError .bannerTitulo {
   color: #f87171;
 }
+
+.bannerBtnSecundario {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  padding: 4px 10px;
+  transition: opacity 0.15s;
+}
+
+.bannerBtnSecundario:hover {
+  opacity: 1;
+}
+
+.bannerNotas {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-top: 10px;
+}
+
+.mdH1 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 10px 0 4px;
+  opacity: 0.95;
+}
+
+.mdH2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  opacity: 0.9;
+}
+
+.mdLi {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  list-style: disc;
+  margin-left: 1rem;
+  opacity: 0.85;
+}
+
+.mdHr {
+  border: 0.5px solid #55555535;
+}
+
+.mdP {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  margin: 3px 0;
+  opacity: 0.85;
+}

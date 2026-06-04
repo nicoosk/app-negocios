@@ -231,6 +231,20 @@ ipcMain.handle(
   }
 )
 
+// Handlers para fetchs externos
+ipcMain.handle('updater:notas', async (_e, version: string) => {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/nicoosk/app-negocios/releases/tags/v${version}`
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return typeof data.body === 'string' ? data.body : null
+  } catch {
+    return null
+  }
+})
+
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
