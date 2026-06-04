@@ -1,5 +1,6 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './ModalDeudores.module.css'
+import { ChevronDown } from 'lucide-react'
 
 interface Deudor {
   id: number
@@ -121,7 +122,10 @@ export default function ModalDeudores({
                       <span className={`${styles.deuda} ${saldado ? styles.saldado : ''}`}>
                         {saldado ? 'Sin deuda' : fmt(d.deuda_total)}
                       </span>
-                      <span className={`${styles.chevron} ${isExp ? styles.open : ''}`}>▼</span>
+                      <ChevronDown
+                        className={`${styles.chevron} ${isExp ? styles.open : ''}`}
+                        size={20}
+                      />
                     </div>
                   </div>
 

@@ -9,6 +9,12 @@
   font-family: inherit;
 }
 
+.header {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
 .titulo {
   margin: 0 0 8px 0;
   font-size: 22px;

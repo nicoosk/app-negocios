@@ -1,6 +1,16 @@
 import { JSX, SetStateAction } from 'react'
 import styles from './Sidebar.module.css'
 import UpdaterBanner from './UpdateBanner'
+import {
+  LayoutDashboard,
+  LogOut,
+  LucideIcon,
+  Package,
+  Settings,
+  ShoppingCart,
+  Store,
+  Users
+} from 'lucide-react'
 
 export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios' | 'admin'
 
@@ -14,19 +24,19 @@ interface SidebarProps {
 interface NavItem {
   id: PaginaActiva
   label: string
-  icono: string
+  icono: LucideIcon
   proximamente?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icono: '▦' },
-  { id: 'ventas', label: 'Panel de ventas', icono: '⊟' },
-  { id: 'inventario', label: 'Inventario', icono: '⊞', proximamente: true }
+  { id: 'dashboard', label: 'Dashboard', icono: LayoutDashboard },
+  { id: 'ventas', label: 'Panel de ventas', icono: ShoppingCart },
+  { id: 'inventario', label: 'Inventario', icono: Package, proximamente: true }
 ]
 
 const ADMIN_ITEMS: NavItem[] = [
-  { id: 'usuarios', label: 'Usuarios', icono: '◎' },
-  { id: 'admin', label: 'Administrar ventas', icono: '⚙' }
+  { id: 'usuarios', label: 'Usuarios', icono: Users },
+  { id: 'admin', label: 'Administrar ventas', icono: Settings }
 ]
 
 interface NavButtonProps {
@@ -44,6 +54,7 @@ function NavButton({ item, activo, onNavegar }: NavButtonProps): JSX.Element {
     .filter(Boolean)
     .join(' ')
 
+  const Icono = item.icono
   return (
     <li className={styles.navItemWrapper}>
       <button
@@ -52,7 +63,7 @@ function NavButton({ item, activo, onNavegar }: NavButtonProps): JSX.Element {
         disabled={item.proximamente}
         title={item.proximamente ? 'Próximamente' : undefined}
       >
-        <span className={styles.navIcono}>{item.icono}</span>
+        <Icono className={styles.navIcono} />
         <span className={styles.navLabel}>{item.label}</span>
         {item.proximamente && <span className={styles.badge}>Próximamente</span>}
       </button>
@@ -69,7 +80,7 @@ export default function Sidebar({
   return (
     <div className={styles.sidebar}>
       <div className={styles.logo}>
-        <span className={styles.logoIcon}>◈</span>
+        <Store className={styles.logoIcon} />
         <span className={styles.logoText}>Mi Almacén</span>
       </div>
 
@@ -102,7 +113,7 @@ export default function Sidebar({
       <div className={styles.footer}>
         <UpdaterBanner onSidebar={true} />
         <button className={styles.btnLogout} onClick={onLogout}>
-          <span className={styles.navIcono}>⏻</span>
+          <LogOut className={styles.navIcono} />
           <span className={styles.navLabel}>Cerrar sesión</span>
         </button>
       </div>

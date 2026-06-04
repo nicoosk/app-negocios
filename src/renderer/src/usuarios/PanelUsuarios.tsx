@@ -1,5 +1,6 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './PanelUsuarios.module.css'
+import { Eye, EyeOff, Users } from 'lucide-react'
 
 export interface Usuario {
   id: number
@@ -92,7 +93,10 @@ export default function PanelUsuarios(): JSX.Element {
   return (
     <div className={styles.pagina}>
       <div className={styles.header}>
-        <h1 className={styles.titulo}>Gestión de usuarios</h1>
+        <div className={styles.titleWrapper}>
+          <Users size={32} />
+          <h1 className={styles.titulo}>Gestión de usuarios</h1>
+        </div>
         <span className={styles.sub}>Registra y administra los accesos a la aplicación.</span>
       </div>
 
@@ -155,7 +159,7 @@ export default function PanelUsuarios(): JSX.Element {
                   tabIndex={-1}
                   type="button"
                 >
-                  {verPin ? '🙈' : '👁'}
+                  {verPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
