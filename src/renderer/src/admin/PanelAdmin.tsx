@@ -188,7 +188,11 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   return (
     <div className={styles.panel}>
       <h2 className={styles.titulo}>Administrar registros</h2>
-
+      <span className={styles.descripcion}>
+        En este panel puedes administrar todas tus ventas y fíos históricos. Cada registro puede ser
+        editado, convertido a otro tipo o elminarse. Cada acción necesita ser realizada por un admin
+        autorizado.
+      </span>
       <div className={styles.tabs}>
         <div className={styles.tabsWrapper}>
           <button
