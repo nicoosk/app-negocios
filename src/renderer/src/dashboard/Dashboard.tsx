@@ -1,6 +1,7 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './Dashboard.module.css'
 import ModalDeudores from '@renderer/fiados/ModalDeudores'
+import { LayoutDashboard } from 'lucide-react'
 
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
@@ -66,7 +67,10 @@ export default function Dashboard({ userId }: DashboardProps): JSX.Element {
   return (
     <div className={styles.pagina}>
       <div className={styles.header}>
-        <h1 className={styles.titulo}>Dashboard</h1>
+        <div className={styles.tituloWrapper}>
+          <LayoutDashboard className={styles.icon} />
+          <h1 className={styles.titulo}>Dashboard</h1>
+        </div>
         <span className={styles.fecha}>{fecha}</span>
       </div>
 

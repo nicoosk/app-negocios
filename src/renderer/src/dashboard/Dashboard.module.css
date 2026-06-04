@@ -16,6 +16,16 @@
   margin-bottom: 28px;
 }
 
+.icon {
+  margin: 0;
+}
+
+.tituloWrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .titulo {
   margin: 0;
   font-size: 22px;

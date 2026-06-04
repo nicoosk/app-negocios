@@ -3,6 +3,7 @@ import TabVentas from './TabVentas'
 import TabFiar from '../fiados/TabFiar'
 import styles from './PanelVentas.module.css'
 import ModalDeudores from '../fiados/ModalDeudores'
+import { ShoppingCart } from 'lucide-react'
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
 interface Venta {
@@ -78,8 +79,11 @@ export default function PanelVentas({ userId, username }: DashboardProps): JSX.E
     <div className={styles.app}>
       <div className={styles.left}>
         <div className={styles.topbar}>
-          <div>
-            <h2>Mi Almacén</h2>
+          <div className={styles.titleWrapper}>
+            <div className={styles.titleIcon}>
+              <ShoppingCart />
+              <h2>Mi Almacén</h2>
+            </div>
             <span>{fecha}</span>
           </div>
           <button className={styles.badge}>{username}</button>

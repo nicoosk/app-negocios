@@ -1,5 +1,6 @@
 import { JSX, useCallback, useEffect, useState } from 'react'
 import styles from '@renderer/admin/PanelAdmin.module.css'
+import { Settings } from 'lucide-react'
 type TabActiva = 'ventas' | 'fiados'
 
 interface VentaAdmin {
@@ -187,7 +188,10 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
 
   return (
     <div className={styles.panel}>
-      <h2 className={styles.titulo}>Administrar registros</h2>
+      <div className={styles.header}>
+        <Settings />
+        <h2 className={styles.titulo}>Administrar registros</h2>
+      </div>
       <span className={styles.descripcion}>
         En este panel puedes administrar todas tus ventas y fíos históricos. Cada registro puede ser
         editado, convertido a otro tipo o elminarse. Cada acción necesita ser realizada por un admin
