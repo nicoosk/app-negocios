@@ -1,5 +1,7 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './Dashboard.module.css'
+import ModalDeudores from '@renderer/fiados/ModalDeudores'
+import { LayoutDashboard } from 'lucide-react'
 
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
@@ -20,7 +22,11 @@ interface Deudor {
   deuda_total: number
 }
 
-export default function Dashboard(): JSX.Element {
+interface DashboardProps {
+  userId: number
+}
+
+export default function Dashboard({ userId }: DashboardProps): JSX.Element {
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -28,6 +34,7 @@ export default function Dashboard(): JSX.Element {
   const [fios, setFios] = useState<Fio[]>([])
   const [deudores, setDeudores] = useState<Deudor[]>([])
   const [totalDeuda, setTotalDeuda] = useState(0)
+  const [modalDeudores, setModalDeudores] = useState<boolean>(false)
 
   const fecha = new Date().toLocaleDateString('es-CL', {
     weekday: 'long',
@@ -60,7 +67,10 @@ export default function Dashboard(): JSX.Element {
   return (
     <div className={styles.pagina}>
       <div className={styles.header}>
-        <h1 className={styles.titulo}>Dashboard</h1>
+        <div className={styles.tituloWrapper}>
+          <LayoutDashboard className={styles.icon} />
+          <h1 className={styles.titulo}>Dashboard</h1>
+        </div>
         <span className={styles.fecha}>{fecha}</span>
       </div>
 
@@ -77,7 +87,10 @@ export default function Dashboard(): JSX.Element {
           <span className={styles.statSub}>{fios.length} fíos registrados</span>
         </div>
 
-        <div className={`${styles.statCard} ${styles.red}`}>
+        <div
+          className={`${styles.statCard} ${styles.red} ${styles.deudoresClickeable}`}
+          onClick={() => setModalDeudores(true)}
+        >
           <span className={styles.statLabel}>DEUDA TOTAL</span>
           <span className={styles.statValor}>{fmt(totalDeuda)}</span>
           <span className={styles.statSub}>
@@ -147,6 +160,14 @@ export default function Dashboard(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {modalDeudores && (
+        <ModalDeudores
+          userId={userId}
+          onClose={() => setModalDeudores(false)}
+          onAbono={() => console.log('Abonado!')}
+        />
+      )}
     </div>
   )
 }

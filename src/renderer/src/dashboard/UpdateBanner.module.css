@@ -1,0 +1,158 @@
+.banner {
+  margin: 0 0 8px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid transparent;
+}
+
+.bannerTextos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bannerTitulo {
+  font-size: 12px;
+  font-weight: 600px;
+  color: #ddd;
+  line-height: 1.2;
+}
+
+.bannerSub {
+  font-size: 10.5px;
+  color: #777;
+  line-height: 1.2;
+}
+
+.bannerAcciones {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.bannerBtn {
+  flex: 1;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.bannerBtn:hover {
+  opacity: 0.85s;
+}
+
+.bannerDescartar {
+  background: transparent;
+  border: none;
+  color: #555;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.bannerDescartar:hover {
+  color: #999;
+}
+
+.bannerDisponible {
+  background: #111e17;
+  border-color: #1a3a2a;
+}
+
+.bannerDescargando {
+  background: #111820;
+  border-color: #1a2a3a;
+}
+
+.bannerDescargando .bannerTitulo {
+  color: #7ab3f0;
+}
+
+.bannerListo {
+  background: #0e1e14;
+  border-color: #1a3a2a;
+}
+
+.bannerListo .bannerTitulo {
+  color: #4ade80;
+}
+
+.bannerListo .bannerBtn {
+  background: #166534;
+  color: #bbf7d0;
+}
+
+.bannerError {
+  background: #1e1010;
+  border-color: #3a1a1a;
+}
+
+.bannerError .bannerTitulo {
+  color: #f87171;
+}
+
+.bannerBtnSecundario {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  padding: 4px 10px;
+  transition: opacity 0.15s;
+}
+
+.bannerBtnSecundario:hover {
+  opacity: 1;
+}
+
+.bannerNotas {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-top: 10px;
+}
+
+.mdH1 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 10px 0 4px;
+  opacity: 0.95;
+}
+
+.mdH2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  opacity: 0.9;
+}
+
+.mdLi {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  list-style: disc;
+  margin-left: 1rem;
+  opacity: 0.85;
+}
+
+.mdHr {
+  border: 0.5px solid #55555535;
+}
+
+.mdP {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  margin: 3px 0;
+  opacity: 0.85;
+}

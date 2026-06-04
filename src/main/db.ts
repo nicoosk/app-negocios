@@ -40,6 +40,36 @@ db.exec(`
   );
 `)
 
+// START: Bloque de migraciones
+let migrationsCount: number = 0
+try {
+  console.log('[db : migrations] Iniciando migraciones pendientes')
+  const columnas = db.pragma('table_info(usuarios)') as { name: string }[]
+  const tieneIsAdmin = columnas.some((c) => c.name === 'is_admin')
+
+  if (!tieneIsAdmin) {
+    console.log(
+      '[db : migrations] No se encontró la columna is_admin para la tabla usuarios. Agregando...'
+    )
+    db.exec(`ALTER TABLE usuarios ADD COLUMN is_admin INTEGER DEFAULT 0`)
+    db.prepare(`UPDATE usuarios SET is_admin = 1 WHERE username = 'admin'`).run()
+    console.log(
+      `[db : migrations] Migración aplicada: Columna is_admin agregada y usuario 'admin' es un admin por defecto. Procura cambiar esto a la brevedad`
+    )
+    migrationsCount++
+  }
+
+  console.log(
+    `[db : migrations] Fin del proceso. ${migrationsCount === 0 ? 'No se realizaron migraciones.' : `Migraciones realizadas con éxito: ${migrationsCount}.`}`
+  )
+} catch (err) {
+  console.error(
+    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} con éxito`
+  )
+  console.error(err, 1)
+}
+// END: Bloque de migraciones
+
 const count = db.prepare('SELECT COUNT(*) as c FROM usuarios').get() as { c: number }
 console.log('Usuarios en DB:', count.c)
 if (count.c === 0) {
@@ -191,14 +221,16 @@ export function getTotalFiados(): { total: number } {
     .get() as { total: number }
 }
 
-export function abonarFiado(id: number, monto: number): Database.RunResult {
+export function abonarFiado(id: number, monto: number, id_usuario: number): Database.RunResult {
   const deudor = db.prepare('SELECT deuda_total FROM fiados WHERE id = ?').get(id) as
     | { deuda_total: number }
     | undefined
   if (!deudor) throw new Error('Deudor no encontrado')
   const nuevaDeuda = Math.max(0, deudor.deuda_total - monto)
   db.prepare('UPDATE fiados SET deuda_total = ? WHERE id = ?').run(nuevaDeuda, id)
-  return db.prepare('INSERT INTO fiados_detalle (fiado_id, monto) VALUES (?, ?)').run(id, -monto)
+  return db
+    .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
+    .run(id, -monto, id_usuario)
 }
 
 export function getHistorialFiado(id: number): { monto: number; fecha: string; hora: string }[] {
@@ -213,4 +245,113 @@ export function getTodosLosFiados(): { id: number; nombre: string; deuda_total: 
     .all() as { id: number; nombre: string; deuda_total: number }[]
 }
 
+// Administrador de ventas y fíos
+
+export function esAdmin(id_usuario: number): boolean {
+  const user = db.prepare('SELECT is_admin FROM usuarios WHERE id = ?').get(id_usuario) as
+    | { is_admin: number }
+    | undefined
+  return user?.is_admin === 1
+}
+
+export function getVentasAdmin(limit: number = 100): {
+  id: number
+  monto: number
+  fecha: string
+  hora: string
+}[] {
+  return db
+    .prepare('SELECT id, monto, fecha, hora FROM ventas ORDER BY id DESC LIMIT ?')
+    .all(limit) as {
+    id: number
+    monto: number
+    fecha: string
+    hora: string
+  }[]
+}
+
+export function editarVenta(id: number, monto: number): Database.RunResult {
+  return db.prepare('UPDATE ventas SET monto = ? WHERE id = ?').run(monto, id)
+}
+
+export function eliminarVenta(id: number): Database.RunResult {
+  return db.prepare('DELETE FROM ventas WHERE id = ?').run(id)
+}
+
+export function convertirVentaAFiado(id: number, nombre: string, id_usuario: number): void {
+  const venta = db.prepare('SELECT monto FROM ventas WHERE id = ?').get(id) as
+    | { monto: number }
+    | undefined
+
+  if (!venta) throw new Error('Venta no encontrada')
+  db.transaction(() => {
+    db.prepare('DELETE FROM ventas WHERE id = ?').run(id)
+    registrarFio(nombre, venta.monto, id_usuario)
+  })()
+}
+
+export function getFiadosDetalleAdmin(limit: number = 100): {
+  id: number
+  fiado_id: number
+  nombre: string
+  monto: number
+  fecha: string
+  hora: string
+}[] {
+  return db
+    .prepare(
+      `SELECT fd.id, fd.fiado_id, f.nombre, fd.monto, fd.fecha, fd.hora, u.username
+        FROM fiados_detalle fd
+        JOIN fiados f ON f.id = fd.fiado_id
+        JOIN usuarios u ON u.id = fd.id_usuario
+        WHERE fd.monto > 0
+        ORDER BY fd.id DESC
+        LIMIT ?`
+    )
+    .all(limit) as {
+    id: number
+    fiado_id: number
+    nombre: string
+    monto: number
+    fecha: string
+    hora: string
+    username: string
+  }[]
+}
+
+export function editarFiadoDetalle(
+  detalle_id: number,
+  fiado_id: number,
+  monto_anterior: number,
+  monto_nuevo: number
+): void {
+  db.transaction(() => {
+    db.prepare('UPDATE fiados_detalle SET monto = ? WHERE id = ?').run(monto_nuevo, detalle_id)
+    db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total + ?) WHERE id = ?').run(
+      monto_nuevo - monto_anterior,
+      fiado_id
+    )
+  })()
+}
+
+export function eliminarFiadoDetalle(detalle_id: number, fiado_id: number, monto: number): void {
+  db.transaction(() => {
+    db.prepare('DELETE FROM fiados_detalle WHERE id = ?').run(detalle_id)
+    db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total - ?) WHERE id = ?').run(
+      monto,
+      fiado_id
+    )
+  })()
+}
+
+export function convertirFiadoAVenta(detalle_id: number, fiado_id: number, monto: number): void {
+  db.transaction(() => {
+    db.prepare('DELETE FROM fiados_detalle WHERE id = ?').run(detalle_id)
+    db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total - ?) WHERE id = ?').run(
+      monto,
+      fiado_id
+    )
+    db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
+  })()
+}
 export default db
