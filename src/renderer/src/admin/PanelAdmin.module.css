@@ -10,16 +10,24 @@
 }
 
 .titulo {
-  margin: 0 0 28px 0;
+  margin: 0 0 8px 0;
   font-size: 22px;
   font-weight: 700;
   color: #e8e8e8;
   letter-spacing: -0.02em;
 }
 
+.descripcion {
+  font-size: 13px;
+  color: #444;
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
 .tabs {
   display: flex;
   justify-content: space-between;
+  margin-top: 16px;
   margin-bottom: 20px;
 }
 
