@@ -166,11 +166,6 @@ export default function PanelUsuarios(): JSX.Element {
             </button>
           </div>
         </div>
-
-        <div className={styles.bloque}>
-          <div className={styles.bloqueLabel}>SI PUEDES VER ESTO</div>
-          <div>Es porque se actualizó automáticamente</div>
-        </div>
       </div>
     </div>
   )
