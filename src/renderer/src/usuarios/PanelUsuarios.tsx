@@ -18,6 +18,7 @@ export default function PanelUsuarios(): JSX.Element {
   const [deleteError, setDeleteError] = useState('')
   const [deleteExito, setDeleteExito] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [verPin, setVerPin] = useState(false)
 
   const cargarUsuarios = async (): Promise<void> => {
     const data = await window.api.usuarios.listar()
@@ -135,15 +136,28 @@ export default function PanelUsuarios(): JSX.Element {
             </div>
             <div className={styles.campo}>
               <label className={styles.label}>PIN</label>
-              <input
-                className={styles.input}
-                type="password"
-                placeholder="Mínimo 4 dígitos"
-                value={nuevoPin}
-                onChange={(e) => setNuevoPin(e.target.value)}
-                autoComplete="new-password"
-                inputMode="numeric"
-              />
+              <div className={styles.inputWrapper}>
+                <input
+                  className={styles.input}
+                  type={verPin ? 'text' : 'password'}
+                  placeholder="Mínimo 4 dígitos"
+                  value={nuevoPin}
+                  onChange={(e) => {
+                    setNuevoPin(e.target.value.replace(/[^0-9]/g, ''))
+                  }}
+                  autoComplete="new-password"
+                  inputMode="numeric"
+                  maxLength={4}
+                />
+                <button
+                  className={styles.ojo}
+                  onClick={() => setVerPin((v) => !v)}
+                  tabIndex={-1}
+                  type="button"
+                >
+                  {verPin ? '🙈' : '👁'}
+                </button>
+              </div>
             </div>
             <div className={styles.campoCheck}>
               <input
