@@ -53,11 +53,7 @@ interface UpdaterBannerProps {
 }
 
 export default function UpdaterBanner({ onSidebar }: UpdaterBannerProps): JSX.Element | null {
-  const [payload, setPayload] = useState<UpdaterPayload | null>({
-    estado: 'listo',
-    version: '0.3.0-alpha',
-    releaseUrl: 'https://github.com/nicoosk/app-negocios/releases/tag/v0.3.0-alpha'
-  })
+  const [payload, setPayload] = useState<UpdaterPayload | null>()
   const [descartado, setDescartado] = useState(false)
   const [notas, setNotas] = useState<string | null>(null)
   const [mostrarNotas, setMostrarNotas] = useState(false)
