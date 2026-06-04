@@ -110,10 +110,20 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button disabled={!ready} onClick={handleLogin}>
+          <button disabled={!ready} onClick={handleLogin} className={styles.loginBtn}>
             Ingresar
           </button>
-          <span className={styles.version}>v{version}</span>
+          <button
+            className={styles.version}
+            onClick={() =>
+              window.api.updater.abrirUrl(
+                `https://github.com/nicoosk/app-negocios/releases/tag/v${version}`
+              )
+            }
+            title="Haz click para ver las notas de la versión"
+          >
+            v{version}
+          </button>
         </div>
       </div>
     </div>
