@@ -99,6 +99,9 @@ declare global {
           ) => Promise<DefaultResponse>
         }
       }
+      app: {
+        version: () => Promise<string>
+      }
     }
   }
 }

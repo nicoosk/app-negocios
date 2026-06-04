@@ -245,6 +245,9 @@ ipcMain.handle('updater:notas', async (_e, version: string) => {
   }
 })
 
+// App specifics
+ipcMain.handle('app:version', () => app.getVersion())
+
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({

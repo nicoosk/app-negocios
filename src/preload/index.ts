@@ -68,6 +68,9 @@ const api = {
       convertir: (id_usuario: number, detalle_id: number, fiado_id: number, monto: number) =>
         ipcRenderer.invoke('admin:fiados:convertir', id_usuario, detalle_id, fiado_id, monto)
     }
+  },
+  app: {
+    version: () => ipcRenderer.invoke('app:version')
   }
 }
 

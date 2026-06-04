@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './Login.module.css'
 import { JSX } from 'react/jsx-runtime'
 import { Usuario } from '../usuarios/PanelUsuarios'
@@ -14,6 +14,7 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const [focusedOnUserInput, setFocusedOnUserInput] = useState<boolean>(false)
+  const [version, setVersion] = useState<string>('')
 
   const pressKey = (k: string): void => {
     if (pin.length < 4) {
@@ -50,6 +51,10 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
     else if (e.key === 'Backspace') delKey()
     else if (e.key === 'Enter') handleLogin()
   }
+
+  useEffect(() => {
+    window.api.app.version().then(setVersion)
+  }, [])
 
   return (
     <div
@@ -108,7 +113,7 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
           <button disabled={!ready} onClick={handleLogin}>
             Ingresar
           </button>
-          <span>Versión{}</span>
+          <span className={styles.version}>v{version}</span>
         </div>
       </div>
     </div>
