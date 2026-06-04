@@ -40,6 +40,36 @@ db.exec(`
   );
 `)
 
+// START: Bloque de migraciones
+let migrationsCount: number = 0
+try {
+  console.log('[db : migrations] Iniciando migraciones pendientes')
+  const columnas = db.pragma('table_info(usuarios)') as { name: string }[]
+  const tieneIsAdmin = columnas.some((c) => c.name === 'is_admin')
+
+  if (!tieneIsAdmin) {
+    console.log(
+      '[db : migrations] No se encontró la columna is_admin para la tabla usuarios. Agregando...'
+    )
+    db.exec(`ALTER TABLE usuarios ADD COLUMN is_admin INTEGER DEFAULT 0`)
+    db.prepare(`UPDATE usuarios SET is_admin = 1 WHERE username = 'admin'`).run()
+    console.log(
+      `[db : migrations] Migración aplicada: Columna is_admin agregada y usuario 'admin' es un admin por defecto. Procura cambiar esto a la brevedad`
+    )
+    migrationsCount++
+  }
+
+  console.log(
+    `[db : migrations] Fin del proceso. ${migrationsCount === 0 ? 'No se realizaron migraciones.' : `Migraciones realizadas con éxito: ${migrationsCount}.`}`
+  )
+} catch (err) {
+  console.error(
+    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} con éxito`
+  )
+  console.error(err, 1)
+}
+// END: Bloque de migraciones
+
 const count = db.prepare('SELECT COUNT(*) as c FROM usuarios').get() as { c: number }
 console.log('Usuarios en DB:', count.c)
 if (count.c === 0) {
