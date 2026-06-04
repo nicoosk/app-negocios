@@ -138,6 +138,13 @@
   opacity: 0.9;
 }
 
+.mdH3 {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin: 6px 0 4px;
+  opacity: 0.9;
+}
+
 .mdLi {
   font-size: 0.72rem;
   line-height: 1.5;
