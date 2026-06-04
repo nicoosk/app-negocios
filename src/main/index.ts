@@ -5,15 +5,24 @@ import icon from '../../resources/icon.png?asset'
 import {
   abonarFiado,
   buscarFiados,
+  convertirFiadoAVenta,
+  convertirVentaAFiado,
   createUser,
   deleteUser,
+  editarFiadoDetalle,
+  editarVenta,
+  eliminarFiadoDetalle,
+  eliminarVenta,
+  esAdmin,
   findUser,
+  getFiadosDetalleAdmin,
   getFiadosHoy,
   getHistorialFiado,
   getTodosLosFiados,
   getTotalFiados,
   getTotalFiadosHoy,
   getTotalVentasHoy,
+  getVentasAdmin,
   getVentasHoy,
   listUsers,
   registrarFio,
@@ -74,9 +83,9 @@ ipcMain.handle('fiados:todos', () => {
   return getTodosLosFiados()
 })
 
-ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
+ipcMain.handle('fiados:abonar', (_e, id: number, monto: number, id_usuario: number) => {
   try {
-    abonarFiado(id, monto)
+    abonarFiado(id, monto, id_usuario)
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -118,6 +127,126 @@ ipcMain.handle('usuarios:eliminar', (_e, id: number) => {
 ipcMain.handle('updater:instalar', () => {
   instalarUpdate()
 })
+
+// Admin handlers
+ipcMain.handle('admin:ventas:historial', (_e, id_usuario: number) => {
+  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  try {
+    return { ok: true, ventas: getVentasAdmin() }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: 'Error interno' }
+  }
+})
+
+ipcMain.handle('admin:ventas:editar', (_e, id_usuario: number, id_number, monto: number) => {
+  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  try {
+    editarVenta(id_number, monto)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: 'Error interno' }
+  }
+})
+
+ipcMain.handle('admin:ventas:eliminar', (_e, id_usuario: number, id: number) => {
+  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  try {
+    eliminarVenta(id)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: 'Error interno' }
+  }
+})
+
+ipcMain.handle('admin:ventas:convertir', (_e, id_usuario: number, id: number, nombre: string) => {
+  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  try {
+    convertirVentaAFiado(id, nombre, id_usuario)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: 'Error interno' }
+  }
+})
+
+ipcMain.handle('admin:fiados:historial', (_e, id_usuario: number) => {
+  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  try {
+    return { ok: true, fiados: getFiadosDetalleAdmin() }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: 'Error interno' }
+  }
+})
+
+ipcMain.handle(
+  'admin:fiados:editar',
+  (
+    _e,
+    id_usuario: number,
+    detalle_id: number,
+    fiado_id: number,
+    monto_anterior: number,
+    monto_nuevo: number
+  ) => {
+    if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+    try {
+      editarFiadoDetalle(detalle_id, fiado_id, monto_anterior, monto_nuevo)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false, error: 'Error interno' }
+    }
+  }
+)
+
+ipcMain.handle(
+  'admin:fiados:eliminar',
+  (_e, id_usuario: number, detalle_id: number, fiado_id: number, monto: number) => {
+    if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+    try {
+      eliminarFiadoDetalle(detalle_id, fiado_id, monto)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false, error: 'Error interno' }
+    }
+  }
+)
+
+ipcMain.handle(
+  'admin:fiados:convertir',
+  (_e, id_usuario: number, detalle_id: number, fiado_id: number, monto: number) => {
+    if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+    try {
+      convertirFiadoAVenta(detalle_id, fiado_id, monto)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false, error: 'Error interno' }
+    }
+  }
+)
+
+// Handlers para fetchs externos
+ipcMain.handle('updater:notas', async (_e, version: string) => {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/nicoosk/app-negocios/releases/tags/v${version}`
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return typeof data.body === 'string' ? data.body : null
+  } catch {
+    return null
+  }
+})
+
+// App specifics
+ipcMain.handle('app:version', () => app.getVersion())
 
 function createWindow(): void {
   // Create the browser window.

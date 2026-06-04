@@ -1,5 +1,6 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './ModalDeudores.module.css'
+import { ChevronDown } from 'lucide-react'
 
 interface Deudor {
   id: number
@@ -14,6 +15,7 @@ interface Movimiento {
 }
 
 interface ModalDeudoresProps {
+  userId: number
   onClose: () => void
   onAbono: () => void
 }
@@ -30,7 +32,11 @@ function calcularSaldos(historial: Movimiento[]): number[] {
   return saldos.reverse()
 }
 
-export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps): JSX.Element {
+export default function ModalDeudores({
+  userId,
+  onClose,
+  onAbono
+}: ModalDeudoresProps): JSX.Element {
   const [deudores, setDeudores] = useState<Deudor[]>([])
   const [expandido, setExpandido] = useState<number | null>(null)
   const [abono, setAbono] = useState('')
@@ -59,7 +65,7 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
     if (!monto || monto <= 0) return
     setCargando(true)
     try {
-      const result = await window.api.fiados.abonar(deudor.id, monto)
+      const result = await window.api.fiados.abonar(deudor.id, monto, userId)
       if (result.ok) {
         const [actualizados, data] = await Promise.all([
           window.api.fiados.todos(),
@@ -114,9 +120,12 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
                     <span className={styles.nombre}>{d.nombre}</span>
                     <div className={styles.rowRight}>
                       <span className={`${styles.deuda} ${saldado ? styles.saldado : ''}`}>
-                        {saldado ? 'Saldado ✓' : fmt(d.deuda_total)}
+                        {saldado ? 'Sin deuda' : fmt(d.deuda_total)}
                       </span>
-                      <span className={`${styles.chevron} ${isExp ? styles.open : ''}`}>▼</span>
+                      <ChevronDown
+                        className={`${styles.chevron} ${isExp ? styles.open : ''}`}
+                        size={20}
+                      />
                     </div>
                   </div>
 

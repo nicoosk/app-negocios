@@ -16,7 +16,8 @@ const api = {
     hoy: () => ipcRenderer.invoke('fiados:hoy'),
     total: () => ipcRenderer.invoke('fiados:total'),
     todos: () => ipcRenderer.invoke('fiados:todos'),
-    abonar: (id: number, monto: number) => ipcRenderer.invoke('fiados:abonar', id, monto),
+    abonar: (id: number, monto: number, id_usuario: number) =>
+      ipcRenderer.invoke('fiados:abonar', id, monto, id_usuario),
     historial: (id: number) => ipcRenderer.invoke('fiados:historial', id)
   },
   usuarios: {
@@ -32,7 +33,44 @@ const api = {
       return () => ipcRenderer.removeListener('updater:estado', handler)
     },
     instalar: () => ipcRenderer.invoke('updater:instalar'),
-    abrirUrl: (url: string) => shell.openExternal(url)
+    abrirUrl: (url: string) => shell.openExternal(url),
+    notas: (version: string) => ipcRenderer.invoke('updater:notas', version)
+  },
+  admin: {
+    ventas: {
+      historial: (id_usuario: number) => ipcRenderer.invoke('admin:ventas:historial', id_usuario),
+      editar: (id_usuario: number, id: number, monto: number) =>
+        ipcRenderer.invoke('admin:ventas:editar', id_usuario, id, monto),
+      eliminar: (id_usuario: number, id: number) =>
+        ipcRenderer.invoke('admin:ventas:eliminar', id_usuario, id),
+      convertir: (id_usuario: number, id: number, nombre: string) =>
+        ipcRenderer.invoke('admin:ventas:convertir', id_usuario, id, nombre)
+    },
+    fiados: {
+      historial: (id_usuario: number) => ipcRenderer.invoke('admin:fiados:historial', id_usuario),
+      editar: (
+        id_usuario: number,
+        detalle_id: number,
+        fiado_id: number,
+        monto_anterior: number,
+        monto_nuevo: number
+      ) =>
+        ipcRenderer.invoke(
+          'admin:fiados:editar',
+          id_usuario,
+          detalle_id,
+          fiado_id,
+          monto_anterior,
+          monto_nuevo
+        ),
+      eliminar: (id_usuario: number, detalle_id: number, fiado_id: number, monto: number) =>
+        ipcRenderer.invoke('admin:fiados:eliminar', id_usuario, detalle_id, fiado_id, monto),
+      convertir: (id_usuario: number, detalle_id: number, fiado_id: number, monto: number) =>
+        ipcRenderer.invoke('admin:fiados:convertir', id_usuario, detalle_id, fiado_id, monto)
+    }
+  },
+  app: {
+    version: () => ipcRenderer.invoke('app:version')
   }
 }
 

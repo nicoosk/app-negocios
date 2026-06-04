@@ -1,5 +1,6 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './PanelUsuarios.module.css'
+import { Eye, EyeOff, Users } from 'lucide-react'
 
 export interface Usuario {
   id: number
@@ -18,6 +19,7 @@ export default function PanelUsuarios(): JSX.Element {
   const [deleteError, setDeleteError] = useState('')
   const [deleteExito, setDeleteExito] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [verPin, setVerPin] = useState(false)
 
   const cargarUsuarios = async (): Promise<void> => {
     const data = await window.api.usuarios.listar()
@@ -91,7 +93,10 @@ export default function PanelUsuarios(): JSX.Element {
   return (
     <div className={styles.pagina}>
       <div className={styles.header}>
-        <h1 className={styles.titulo}>Gestión de usuarios</h1>
+        <div className={styles.titleWrapper}>
+          <Users size={32} />
+          <h1 className={styles.titulo}>Gestión de usuarios</h1>
+        </div>
         <span className={styles.sub}>Registra y administra los accesos a la aplicación.</span>
       </div>
 
@@ -135,15 +140,28 @@ export default function PanelUsuarios(): JSX.Element {
             </div>
             <div className={styles.campo}>
               <label className={styles.label}>PIN</label>
-              <input
-                className={styles.input}
-                type="password"
-                placeholder="Mínimo 4 dígitos"
-                value={nuevoPin}
-                onChange={(e) => setNuevoPin(e.target.value)}
-                autoComplete="new-password"
-                inputMode="numeric"
-              />
+              <div className={styles.inputWrapper}>
+                <input
+                  className={styles.input}
+                  type={verPin ? 'text' : 'password'}
+                  placeholder="Mínimo 4 dígitos"
+                  value={nuevoPin}
+                  onChange={(e) => {
+                    setNuevoPin(e.target.value.replace(/[^0-9]/g, ''))
+                  }}
+                  autoComplete="new-password"
+                  inputMode="numeric"
+                  maxLength={4}
+                />
+                <button
+                  className={styles.ojo}
+                  onClick={() => setVerPin((v) => !v)}
+                  tabIndex={-1}
+                  type="button"
+                >
+                  {verPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div className={styles.campoCheck}>
               <input
@@ -165,11 +183,6 @@ export default function PanelUsuarios(): JSX.Element {
               {cargando ? 'Registrando...' : 'Registrar usuario'}
             </button>
           </div>
-        </div>
-
-        <div className={styles.bloque}>
-          <div className={styles.bloqueLabel}>SI PUEDES VER ESTO</div>
-          <div>Es porque se actualizó automáticamente</div>
         </div>
       </div>
     </div>
