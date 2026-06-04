@@ -15,17 +15,50 @@ interface NavItem {
   id: PaginaActiva
   label: string
   icono: string
-  soloAdmin?: boolean
   proximamente?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icono: '▦' },
   { id: 'ventas', label: 'Panel de ventas', icono: '⊟' },
-  { id: 'inventario', label: 'Inventario', icono: '⊞', proximamente: true },
-  { id: 'usuarios', label: 'Usuarios', icono: '◎', soloAdmin: true },
-  { id: 'admin', label: 'Administrar ventas', icono: '⚙', soloAdmin: true }
+  { id: 'inventario', label: 'Inventario', icono: '⊞', proximamente: true }
 ]
+
+const ADMIN_ITEMS: NavItem[] = [
+  { id: 'usuarios', label: 'Usuarios', icono: '◎' },
+  { id: 'admin', label: 'Administrar ventas', icono: '⚙' }
+]
+
+interface NavButtonProps {
+  item: NavItem
+  activo: boolean
+  onNavegar: React.Dispatch<SetStateAction<PaginaActiva>>
+}
+
+function NavButton({ item, activo, onNavegar }: NavButtonProps): JSX.Element {
+  const clases = [
+    styles.navItem,
+    activo ? styles.activo : '',
+    item.proximamente ? styles.proximamente : ''
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  return (
+    <li className={styles.navItemWrapper}>
+      <button
+        className={clases}
+        onClick={() => !item.proximamente && onNavegar(item.id)}
+        disabled={item.proximamente}
+        title={item.proximamente ? 'Próximamente' : undefined}
+      >
+        <span className={styles.navIcono}>{item.icono}</span>
+        <span className={styles.navLabel}>{item.label}</span>
+        {item.proximamente && <span className={styles.badge}>Próximamente</span>}
+      </button>
+    </li>
+  )
+}
 
 export default function Sidebar({
   paginaActiva,
@@ -33,8 +66,6 @@ export default function Sidebar({
   onNavegar,
   onLogout
 }: SidebarProps): JSX.Element {
-  const itemsVisibles = NAV_ITEMS.filter((item) => !item.soloAdmin || isAdmin)
-
   return (
     <div className={styles.sidebar}>
       <div className={styles.logo}>
@@ -43,31 +74,29 @@ export default function Sidebar({
       </div>
 
       <ul className={styles.nav}>
-        {itemsVisibles.map((item) => {
-          const activo = paginaActiva === item.id
-          const clases = [
-            styles.navItem,
-            activo ? styles.activo : '',
-            item.proximamente ? styles.proximamente : ''
-          ]
-            .filter(Boolean)
-            .join(' ')
+        {NAV_ITEMS.map((item) => (
+          <NavButton
+            key={item.id}
+            item={item}
+            activo={paginaActiva === item.id}
+            onNavegar={onNavegar}
+          />
+        ))}
 
-          return (
-            <li key={item.id} className={styles.navItemWrapper}>
-              <button
-                className={clases}
-                onClick={() => !item.proximamente && onNavegar(item.id)}
-                disabled={item.proximamente}
-                title={item.proximamente ? 'Próximamente' : undefined}
-              >
-                <span className={styles.navIcono}>{item.icono}</span>
-                <span className={styles.navLabel}>{item.label}</span>
-                {item.proximamente && <span className={styles.badge}>Próximamente</span>}
-              </button>
-            </li>
-          )
-        })}
+        {isAdmin && (
+          <>
+            <li className={styles.seccionLabel}>Administración</li>
+
+            {ADMIN_ITEMS.map((item) => (
+              <NavButton
+                key={item.id}
+                item={item}
+                activo={paginaActiva === item.id}
+                onNavegar={onNavegar}
+              />
+            ))}
+          </>
+        )}
       </ul>
 
       <div className={styles.footer}>

@@ -147,3 +147,12 @@
   color: #e06060;
 }
 
+.seccionLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #333;
+  padding: 14px 12px 4px;
+  list-style: none;
+}
