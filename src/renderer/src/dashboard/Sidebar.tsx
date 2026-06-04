@@ -83,7 +83,7 @@ export default function Sidebar({
           />
         ))}
 
-        {isAdmin && (
+        {isAdmin ? (
           <>
             <li className={styles.seccionLabel}>Administración</li>
 
@@ -96,7 +96,7 @@ export default function Sidebar({
               />
             ))}
           </>
-        )}
+        ) : undefined}
       </ul>
 
       <div className={styles.footer}>
