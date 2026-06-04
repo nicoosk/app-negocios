@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import styles from './Login.module.css'
 import { JSX } from 'react/jsx-runtime'
 import { Usuario } from '../usuarios/PanelUsuarios'
+import UpdaterBanner from '@renderer/dashboard/UpdateBanner'
 
 interface LoginProps {
   onSuccess: (user: Usuario) => void
@@ -64,45 +65,51 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
         autoFocus
         readOnly
       />
-      <div className={styles.card}>
-        <h1>Mi Almacén</h1>
-
-        <input
-          type="text"
-          placeholder="Usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onFocus={() => setFocusedOnUserInput(true)}
-          onBlur={() => setFocusedOnUserInput(false)}
-          onClick={(e) => e.stopPropagation()}
-        />
-
-        <div className={styles.dots}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className={`${styles.dot} ${i < pin.length ? styles.filled : ''}`} />
-          ))}
+      <div className={styles.contenedor}>
+        <div className={styles.lateral}>
+          <UpdaterBanner onSidebar={false} />
         </div>
+        <div className={styles.card}>
+          <h1>Mi Almacén</h1>
 
-        <div className={styles.numpad}>
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => (
-            <button key={k} onMouseDown={(e) => e.preventDefault()} onClick={() => pressKey(k)}>
-              {k}
+          <input
+            type="text"
+            placeholder="Usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onFocus={() => setFocusedOnUserInput(true)}
+            onBlur={() => setFocusedOnUserInput(false)}
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          <div className={styles.dots}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={`${styles.dot} ${i < pin.length ? styles.filled : ''}`} />
+            ))}
+          </div>
+
+          <div className={styles.numpad}>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => (
+              <button key={k} onMouseDown={(e) => e.preventDefault()} onClick={() => pressKey(k)}>
+                {k}
+              </button>
+            ))}
+            <div />
+            <button onMouseDown={(e) => e.preventDefault()} onClick={() => pressKey('0')}>
+              0
             </button>
-          ))}
-          <div />
-          <button onMouseDown={(e) => e.preventDefault()} onClick={() => pressKey('0')}>
-            0
+            <button className={styles.del} onMouseDown={(e) => e.preventDefault()} onClick={delKey}>
+              ⌫
+            </button>
+          </div>
+
+          {error && <p className={styles.error}>{error}</p>}
+
+          <button disabled={!ready} onClick={handleLogin}>
+            Ingresar
           </button>
-          <button className={styles.del} onMouseDown={(e) => e.preventDefault()} onClick={delKey}>
-            ⌫
-          </button>
+          <span>Versión{}</span>
         </div>
-
-        {error && <p className={styles.error}>{error}</p>}
-
-        <button disabled={!ready} onClick={handleLogin}>
-          Ingresar
-        </button>
       </div>
     </div>
   )

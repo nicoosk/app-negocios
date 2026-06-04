@@ -33,7 +33,8 @@ const api = {
       return () => ipcRenderer.removeListener('updater:estado', handler)
     },
     instalar: () => ipcRenderer.invoke('updater:instalar'),
-    abrirUrl: (url: string) => shell.openExternal(url)
+    abrirUrl: (url: string) => shell.openExternal(url),
+    notas: (version: string) => ipcRenderer.invoke('updater:notas', version)
   },
   admin: {
     ventas: {
