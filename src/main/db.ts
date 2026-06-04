@@ -44,8 +44,8 @@ db.exec(`
 let migrationsCount: number = 0
 try {
   console.log('[db : migrations] Iniciando migraciones pendientes')
-  const columnas = db.pragma('table_info(usuarios)') as { name: string }[]
-  const tieneIsAdmin = columnas.some((c) => c.name === 'is_admin')
+  const columnasUsuarios = db.pragma('table_info(usuarios)') as { name: string }[]
+  const tieneIsAdmin = columnasUsuarios.some((c) => c.name === 'is_admin')
 
   if (!tieneIsAdmin) {
     console.log(
@@ -58,6 +58,21 @@ try {
     )
     migrationsCount++
   }
+  const columnasFiadosDetalle = db.pragma('table_info(fiados_detalle)') as { name: string }[]
+  const idUsuarioPresenteEnFiadosDetalle = columnasFiadosDetalle.some(
+    (c) => c.name === 'id_usuario'
+  )
+
+  if (!idUsuarioPresenteEnFiadosDetalle) {
+    console.log(
+      `[db : migrations] No se encontró la columna id_usuario para la tabla fiados_detalle. Agregando...`
+    )
+    db.exec('ALTER TABLE fiados_detalle ADD COLUMN id_usuario INTEGER NOT NULL DEFAULT 1')
+    console.log(
+      '[db : migrations] Migración aplicada: Columna id_usuario agregada. Registros existentes adoptan id_usuario = 1'
+    )
+    migrationsCount++
+  }
 
   console.log(
     `[db : migrations] Fin del proceso. ${migrationsCount === 0 ? 'No se realizaron migraciones.' : `Migraciones realizadas con éxito: ${migrationsCount}.`}`
@@ -66,7 +81,7 @@ try {
   console.error(
     `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} con éxito`
   )
-  console.error(err, 1)
+  console.error(err)
 }
 // END: Bloque de migraciones
 
