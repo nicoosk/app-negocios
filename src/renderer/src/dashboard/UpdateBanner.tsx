@@ -10,15 +10,21 @@ function renderMarkdown(texto: string): JSX.Element {
       {lineas.map((linea, i) => {
         if (linea.startsWith('## '))
           return (
-            <h3 key={i} className={styles.mdH2}>
+            <h2 key={i} className={styles.mdH2}>
               {linea.slice(3)}
+            </h2>
+          )
+        if (linea.startsWith('### '))
+          return (
+            <h3 key={i} className={styles.mdH3}>
+              {linea.slice(4)}
             </h3>
           )
         if (linea.startsWith('# '))
           return (
-            <h2 key={i} className={styles.mdH1}>
+            <h1 key={i} className={styles.mdH1}>
               {linea.slice(2)}
-            </h2>
+            </h1>
           )
         if (linea.startsWith('- ') || linea.startsWith('* '))
           return (
@@ -53,11 +59,7 @@ interface UpdaterBannerProps {
 }
 
 export default function UpdaterBanner({ onSidebar }: UpdaterBannerProps): JSX.Element | null {
-  const [payload, setPayload] = useState<UpdaterPayload | null>({
-    estado: 'listo',
-    version: '0.3.0-alpha',
-    releaseUrl: 'https://github.com/nicoosk/app-negocios/releases/tag/v0.3.0-alpha'
-  })
+  const [payload, setPayload] = useState<UpdaterPayload | null>(null)
   const [descartado, setDescartado] = useState(false)
   const [notas, setNotas] = useState<string | null>(null)
   const [mostrarNotas, setMostrarNotas] = useState(false)
