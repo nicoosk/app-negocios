@@ -7,12 +7,13 @@ import {
   LucideIcon,
   Package,
   Settings,
+  Settings2,
   ShoppingCart,
   Store,
   Users
 } from 'lucide-react'
 
-export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios' | 'admin'
+export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios' | 'admin' | 'config'
 
 interface SidebarProps {
   paginaActiva: PaginaActiva
@@ -31,7 +32,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icono: LayoutDashboard },
   { id: 'ventas', label: 'Panel de ventas', icono: ShoppingCart },
-  { id: 'inventario', label: 'Inventario', icono: Package, proximamente: true }
+  { id: 'inventario', label: 'Inventario', icono: Package },
+  { id: 'config', label: 'Configuración', icono: Settings2, proximamente: true }
 ]
 
 const ADMIN_ITEMS: NavItem[] = [

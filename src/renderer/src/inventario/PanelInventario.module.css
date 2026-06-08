@@ -1,0 +1,467 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.titleRow h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: #e8e8e8;
+}
+
+.alertaBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  letter-spacing: 0.03rem;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e8e8e8;
+  font-size: 0.85rem;
+  width: 220px;
+}
+
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.btnNuevo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.btnNuevo:hover {
+  background: #2563eb;
+}
+
+.btnNuevo:active {
+  color: #ffffff82;
+  background: #2564eb87;
+  transform: scale(0.98);
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 64px 0;
+}
+
+.tableWrap {
+  flex: 1;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table thead th {
+  background: #1B1B1B;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table tbody tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.table tbody td {
+  padding: 10px 14px;
+  color: #d8d8d8;
+}
+
+.rowLow {
+  background: rgba(239, 68, 68, 0.04);
+  color: #dc2626;
+}
+
+.tdNombre {
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.tdMono {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.noData {
+  color: #4ade80;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tdPrecio {
+  color: #4ade80;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tdStock {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tdStockBajo {
+  color: #f87171 !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.contentContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tdUnidad {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.8rem;
+}
+
+.tdAcciones {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.btnEdit,
+.btnDel {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+}
+
+.btnEdit {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.btnEdit:hover {
+  color: #93c5fd;
+  background: rgba(147, 197, 253, 0.1);
+  border-color: rgba(147, 197, 253, 0.2);
+}
+
+.btnEdit:active {
+  transform: scale(0.96);
+}
+
+.btnDel {
+  color: #f87171;
+}
+
+.btnDel:hover {
+  color: #ff4a4a;
+  background: rgba(248, 113, 133, 0.1);
+  border-color: rgba(248, 113, 133, 0.2);
+}
+
+.btnDel:active {
+  transform: scale(0.96);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: #16161e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 28px;
+  min-width: 420px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal h3  {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e8e8e8;
+}
+
+.modalChico {
+  background: #16161e;
+  border: 1px solid rgba(255, 255, 2255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.warningText {
+  display: flex;
+  flex-direction: column;
+  align-content: left;
+  font-size: 0.9rem;
+}
+
+.modalChico p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+}
+
+.modalChico .deleteWarning {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.field label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.field .obligatorio {
+  color: #ef4444;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 12px;
+}
+
+.input,
+.select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e8e8e8;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.input:disabled {
+  opacity: 0.4;
+}
+
+.select option {
+  background: #16161e;
+}
+
+.badgeNoSoportado {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  white-space: nowrap;
+}
+
+.labelWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.modalAcciones {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.btnCancelar {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s, opacity 0.15s;
+}
+
+.btnCancelar:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.btnCancelar:active {
+  opacity: 0.85;
+  transform: scale(0.96);
+}
+
+.btnGuardar {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s, transform 0.15s;
+}
+
+.btnGuardar:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btnGuardar:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.btnGuardar:active {
+  opacity: 0.85;
+  transform: scale(0.96);
+}
+
+.btnEliminar {
+  background: #ef4444;
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s, transform 0.15s;
+}
+
+.btnEliminar:hover {
+  background: #dc2626;
+}
+
+.btnEliminar:active {
+  opacity: 0.85;
+  transform: scale(0.96);
+}
+
+.error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  align-self: center;
+  padding: 6px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
