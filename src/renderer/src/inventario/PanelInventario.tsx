@@ -142,6 +142,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
               <span className={styles.alertaLabel}>{stockBajo} con stock bajo</span>
             </div>
           )}
+          <span className={styles.badge}>Beta</span>
         </div>
         <div className={styles.acciones}>
           <div className={styles.searchWrap}>

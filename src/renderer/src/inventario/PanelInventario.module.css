@@ -470,3 +470,16 @@
   font-weight: 600;
 }
 
+.badge {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #555;
+  background: #1a1a1a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #2a2a2a;
+  white-space: nowrap;
+}
