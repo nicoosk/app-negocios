@@ -38,6 +38,17 @@ db.exec(`
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
     FOREIGN KEY (fiado_id) REFERENCES fiados(id)
   );
+
+  CREATE TABLE IF NOT EXISTS productos (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre        TEXT NOT NULL,
+    codigo_barra  TEXT UNIQUE,
+    precio_venta  INTEGER NOT NULL DEFAULT 0,
+    stock         INTEGER NOT NULL DEFAULT 0,
+    unidad        TEXT NOT NULL DEFAULT 'unidad',
+    activo        INTEGER NOT NULL DEFAULT 1,
+    creado_en     TEXT NOT NULL DEFAULT (datetime('now'))
+  )
 `)
 
 // START: Bloque de migraciones
@@ -102,6 +113,9 @@ const testUserExists = db
 if (testUserExists.c === 0) {
   db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run('Prueba', '0000')
 }
+
+const productCount = db.prepare('SELECT COUNT(*) as c FROM productos').get() as { c: number }
+console.log('Productos registrados:', productCount.c)
 
 export function findUser(
   username: string,
@@ -369,4 +383,56 @@ export function convertirFiadoAVenta(detalle_id: number, fiado_id: number, monto
     db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
   })()
 }
+
+// Productos / Inventario
+interface Producto {
+  id: number
+  nombre: string
+  codigo_barra: string | null
+  precio_venta: number
+  stock: number
+  unidad: string
+  activo: number
+  creado_en: string
+}
+
+export function listarProductos(): Producto[] {
+  return db
+    .prepare('SELECT * FROM productos WHERE activo = 1 ORDER BY nombre ASC')
+    .all() as Producto[]
+}
+
+export function crearProducto(
+  nombre: string,
+  codigo_barra: string | null,
+  precio_venta: number,
+  stock: number,
+  unidad: string
+): Database.RunResult {
+  return db
+    .prepare(
+      'INSERT INTO productos (nombre, codigo_barra, precio_venta, stock, unidad) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(nombre, codigo_barra, precio_venta, stock, unidad)
+}
+
+export function actualizarProducto(
+  id: number,
+  nombre: string,
+  codigo_barra: string | null,
+  precio_venta: number,
+  stock: number,
+  unidad: string
+): Database.RunResult {
+  return db
+    .prepare(
+      'UPDATE productos SET nombre = ?, codigo_barra = ?, precio_venta = ?, stock = ?, unidad = ? WHERE id = ?'
+    )
+    .run(nombre, codigo_barra, precio_venta, stock, unidad, id)
+}
+
+export function eliminarProducto(id: number): Database.RunResult {
+  return db.prepare('UPDATE productos SET activo = 0 WHERE id = ?').run(id)
+}
+
 export default db

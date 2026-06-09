@@ -7,12 +7,13 @@ import {
   LucideIcon,
   Package,
   Settings,
+  Settings2,
   ShoppingCart,
   Store,
   Users
 } from 'lucide-react'
 
-export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios' | 'admin'
+export type PaginaActiva = 'dashboard' | 'ventas' | 'inventario' | 'usuarios' | 'admin' | 'config'
 
 interface SidebarProps {
   paginaActiva: PaginaActiva
@@ -26,12 +27,14 @@ interface NavItem {
   label: string
   icono: LucideIcon
   proximamente?: boolean
+  beta?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icono: LayoutDashboard },
   { id: 'ventas', label: 'Panel de ventas', icono: ShoppingCart },
-  { id: 'inventario', label: 'Inventario', icono: Package, proximamente: true }
+  { id: 'inventario', label: 'Inventario', icono: Package, beta: true },
+  { id: 'config', label: 'Configuración', icono: Settings2, proximamente: true }
 ]
 
 const ADMIN_ITEMS: NavItem[] = [
@@ -61,11 +64,12 @@ function NavButton({ item, activo, onNavegar }: NavButtonProps): JSX.Element {
         className={clases}
         onClick={() => !item.proximamente && onNavegar(item.id)}
         disabled={item.proximamente}
-        title={item.proximamente ? 'Próximamente' : undefined}
+        title={item.proximamente ? 'Próximamente' : item.beta ? 'Beta' : undefined}
       >
         <Icono className={styles.navIcono} />
         <span className={styles.navLabel}>{item.label}</span>
         {item.proximamente && <span className={styles.badge}>Próximamente</span>}
+        {item.beta && <span className={styles.badge}>Beta</span>}
       </button>
     </li>
   )
