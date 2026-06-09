@@ -4,14 +4,17 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
   abonarFiado,
+  actualizarProducto,
   buscarFiados,
   convertirFiadoAVenta,
   convertirVentaAFiado,
+  crearProducto,
   createUser,
   deleteUser,
   editarFiadoDetalle,
   editarVenta,
   eliminarFiadoDetalle,
+  eliminarProducto,
   eliminarVenta,
   esAdmin,
   findUser,
@@ -24,6 +27,7 @@ import {
   getTotalVentasHoy,
   getVentasAdmin,
   getVentasHoy,
+  listarProductos,
   listUsers,
   registrarFio,
   registrarVenta
@@ -247,6 +251,67 @@ ipcMain.handle('updater:notas', async (_e, version: string) => {
 
 // App specifics
 ipcMain.handle('app:version', () => app.getVersion())
+
+// Productos / Inventario
+ipcMain.handle('productos:listar', () => {
+  try {
+    return { ok: true, productos: listarProductos() }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, productos: [] }
+  }
+})
+
+ipcMain.handle(
+  'productos:crear',
+  (
+    _e,
+    nombre: string,
+    codigo_barra: string | null,
+    precio_venta: number,
+    stock: number,
+    unidad: string
+  ) => {
+    try {
+      crearProducto(nombre, codigo_barra, precio_venta, stock, unidad)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false }
+    }
+  }
+)
+
+ipcMain.handle(
+  'productos:actualizar',
+  (
+    _e,
+    id: number,
+    nombre: string,
+    codigo_barra: string | null,
+    precio_venta: number,
+    stock: number,
+    unidad: string
+  ) => {
+    try {
+      actualizarProducto(id, nombre, codigo_barra, precio_venta, stock, unidad)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false }
+    }
+  }
+)
+
+ipcMain.handle('productos:eliminar', (_e, id: number) => {
+  try {
+    eliminarProducto(id)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false }
+  }
+})
 
 function createWindow(): void {
   // Create the browser window.

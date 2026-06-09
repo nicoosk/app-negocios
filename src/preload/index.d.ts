@@ -7,6 +7,17 @@ type DefaultResponse = {
   error?: string
 }
 
+interface Producto {
+  id: number
+  nombre: string
+  codigo_barra: string | null
+  precio_venta: number
+  stock: number
+  unidad: string
+  activo: number
+  creado_en: string
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -101,6 +112,25 @@ declare global {
       }
       app: {
         version: () => Promise<string>
+      }
+      productos: {
+        listar: () => Promise<{ ok: boolean; productos: Producto[] }>
+        crear: (
+          nombre: string,
+          codigo_barra: string | null,
+          precio_venta: number,
+          stock: number,
+          unidad: string
+        ) => Promise<DefaultResponse>
+        actualizar: (
+          id: number,
+          nombre: string,
+          codigo_barra: string | null,
+          precio_venta: number,
+          stock: number,
+          unidad: string
+        ) => Promise<DefaultResponse>
+        eliminar: (id: number) => Promise<DefaultResponse>
       }
     }
   }

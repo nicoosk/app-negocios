@@ -71,6 +71,34 @@ const api = {
   },
   app: {
     version: () => ipcRenderer.invoke('app:version')
+  },
+  productos: {
+    listar: () => ipcRenderer.invoke('productos:listar'),
+    crear: (
+      nombre: string,
+      codigo_barra: string | null,
+      precio_venta: number,
+      stock: number,
+      unidad: string
+    ) => ipcRenderer.invoke('productos:crear', nombre, codigo_barra, precio_venta, stock, unidad),
+    actualizar: (
+      id: number,
+      nombre: string,
+      codigo_barra: string | null,
+      precio_venta: number,
+      stock: number,
+      unidad: string
+    ) =>
+      ipcRenderer.invoke(
+        'productos:actualizar',
+        id,
+        nombre,
+        codigo_barra,
+        precio_venta,
+        stock,
+        unidad
+      ),
+    eliminar: (id: number) => ipcRenderer.invoke('productos:eliminar', id)
   }
 }
 
