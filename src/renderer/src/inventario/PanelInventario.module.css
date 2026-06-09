@@ -75,28 +75,28 @@
 }
 
 .btnNuevo {
+  background: #1c1a2e;
+  border: 1px solid #3d3870;
+  color: #a89fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 7px 14px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
   white-space: nowrap;
 }
 
 .btnNuevo:hover {
-  background: #2563eb;
+  background: #252240;
 }
 
-.btnNuevo:active {
-  color: #ffffff82;
-  background: #2564eb87;
+.btnNuevo:active:not(:disabled) {
+  opacity: 0.85;
   transform: scale(0.98);
 }
 
@@ -408,19 +408,24 @@
 }
 
 .btnGuardar {
-  background: #3b82f6;
-  border: none;
-  color: #fff;
+  background: #1c1a2e;
+  border: 1px solid #3d3870;
+  color: #a89fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
   border-radius: 8px;
-  padding: 12px 18px;
-  font-size: 0.85rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s, transform 0.15s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s, transform 0.15s;
+  white-space: nowrap;
 }
 
 .btnGuardar:hover:not(:disabled) {
-  background: #2563eb;
+  background: #252240;
 }
 
 .btnGuardar:disabled {
@@ -428,7 +433,7 @@
   opacity: 0.35;
 }
 
-.btnGuardar:active {
+.btnGuardar:active:not(:disabled) {
   opacity: 0.85;
   transform: scale(0.96);
 }
