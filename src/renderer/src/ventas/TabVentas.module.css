@@ -1,101 +1,451 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.85rem;
+  flex: 1;
+  overflow: auto;
+}
+
+.searchRow {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.searchWrap {
+  position: relative;
   flex: 1;
 }
 
-.montoCard {
-  background: #1a1a1a;
-  border: 0.5px solid #2e2e2e;
-  border-radius: 14px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.label {
-  font-size: 11px;
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #5f5e5a;
-  letter-spacing: 0.5px;
+  pointer-events: none;
 }
 
-.montoDisplay {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.prefix {
-  font-size: 24px;
-  color: #5f5e5a;
-  font-weight: 300;
-}
-
-.value {
-  font-size: 48px;
-  font-weight: 500;
-  color: #f0efe8;
-  letter-spacing: -2px;
-}
-
-.cursor {
-  width: 3px;
-  height: 40px;
-  background: #1d9e75;
-  border-radius: 2px;
-  margin-left: 2px;
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0 }
-}
-
-.numpad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
-}
-
-.numpad button {
+.searchInput {
+  width: 100%;
   background: #1a1a1a;
-  border: 0.5px solid #2e2e2e;
-  border-radius: 11px;
-  padding: 14px 0;
-  font-weight: 400;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 9px 12px 9px 32px;
+  font-size: 13px;
   color: #f0efe8;
-  cursor: pointer;
+  outline: none;
   font-family: inherit;
-  transition: background 0.08s, transform 0.06s, border-color 0.08s;
-  user-select: none;
+  transition: border-color 0.15s;
 }
 
-.numpad button:hover {
-  background: #222;
+.searchInput:focus {
   border-color: #3a3a3a;
 }
 
-.numpad button:active {
-  background: #2e2e2e;
-  transform: scale(0.96);
+.searchInput::placeholder {
+  color: #5f5e5a;
 }
 
-.numpad .muted {
+.dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  border: 0.5px solid #3a3a3a;
+  border-radius: 10px;
+  z-index: 50;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.dropdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-top: 0.5px solid #2e2e2e;
+}
+
+.dropdownItem:first-child {
+  border-top: none;
+}
+
+.dropdownItem:hover {
+  background: #222;
+}
+
+.dropdownNombe {
+  font-size: 13px;
+  color: #f0efe8;
+}
+
+.dropdownMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dropdownPrecio {
+  font-size: 12px;
+  color: #1d9e75;
+  font-weight: 500;
+}
+
+.dropdownStock {
+  font-size: 11px;
   color: #5f5e5a;
-  font-size: 14px;
+}
+
+.dropdownStockBajo {
+  font-size: 11px;
+  color: #e24b4a;
+}
+
+.btnLibre {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-size: 12px;
+  color: #5f5e5a;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnLibre:hover {
+  border-color: #3a3a3a;
+  color: #888780;
+}
+
+.cartArea {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cartEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #5454547f;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.cartEmptyIcon {
+  color: #2a2a2a;
+}
+
+.cartEmptyTitle {
+  font-size: 13px;
+  color: #5f5e5a;
+}
+
+.cartEmptyHint {
+  font-size: 12px;
+  color: #3a3a3a;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.cartList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.item {
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.itemLibre {
+  background: #161310;
+  border-color: #252010;
+}
+
+.itemEditing {
+  background: #0d1f16;
+  border-color: #1d9e7540;
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemNombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0efe8;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemLibre .itemNombre {
+  color: #88806a;
+}
+
+.itemPrecioRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  flex-wrap: nowrap;
+}
+
+.itemPrecioBase {
+  font-size: 13px;
+  color: #5f5e5a;
+}
+
+.itemPrecioBaseGris {
+  font-size: 11px;
+  color: #5f5e5a;
+  white-space: nowrap;
+}
+
+.itemPrecioTachado {
+  font-size: 12px;
+  color: #5f5e5a;
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.itemPrecioTemp {
+  font-size: 13px;
+  color: #1d9e75;
+  background: #0d2018;
+  border: 0.5px solid #1d4a30;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.itemPrecioPrefix {
+  font-size: 11px;
+  color: #5f5e5a;
+}
+
+.itemPrecioInput {
+  width: 60px;
+  background: #111;
+  border: 0.5px solid #1d9e75;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #f0efe8;
+  outline: none;
+  font-family: inherit;
+}
+
+.btnConfirm {
+  background: #1d9e75;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 5px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.btnLapiz {
+  background: transparent;
+  border: none;
+  color: #3a3a3a;
+  padding: 2px 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.btnLapiz:hover {
+  color: #888780;
+  background: #222;
+}
+
+.btnLapizActive {
+  color: #1d9e75;
+}
+
+.btnLapizActive:hover {
+  color: #24c290;
+  background: #0d2018;
+}
+
+.libreTag {
+  font-size: 10px;
+  color: #5f5020;
+  background: #1e1c08;
+  border: 0.5px solid #3a3518;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.quantityWrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.quantityBtn {
+  width: 24px;
+  height: 24px;
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 6px;
+  color: #888780;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.quantityBtn:hover {
+  border-color: #3a3a3a;
+  color: #f0efe8;
+}
+
+.quantityBtn:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+.quantityValue {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 18px;
+  text-align: center;
+  color: #f0efe8;
+}
+
+.itemSub {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d9e75;
+  min-width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.itemSubLibre {
+  color: #88806a;
+}
+
+.btnDel {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #2e2e2e;
+  padding: 3px 4px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.btnDel:hover {
+  color: #e24b4a;
+  background: #2a1010;
+}
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.divider {
+  border: none;
+  border-top: 0.5px solid #2e2e2e;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 2px;
+}
+
+.totalLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.totalLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5f5e5a;
+  letter-spacing: 0.4px;
+}
+
+.totalHint {
+  font-size: 12px;
+  color: #3a3a3a;
+}
+
+.totalRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.itemsCount {
+  font-size: 11px;
+  color: #5f5e5a;
+  font-weight: 600;
+}
+
+.totalVal {
+  font-size: 28px;
+  font-weight: 500;
+  color: #f0efe8;
+  letter-spacing: -0.5px;
 }
 
 .btnVenta {
   width: 100%;
   background: #1d9e75;
   border: none;
-  border-radius: 11px;
-  padding: 15px;
+  border-radius: 10px;
+  padding: 14px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   color: #fff;
   cursor: pointer;
   font-family: inherit;
@@ -103,22 +453,132 @@
 }
 
 .btnVenta:hover:not(:disabled) {
-  background: #0f6e56
+  background: #0f6e56;
 }
 
 .btnVenta:active:not(:disabled) {
-  transform: scale(0.98)
+  transform: scale(0.98);
 }
 
 .btnVenta:disabled {
   opacity: 0.3;
-  cursor: not-allowed
+  cursor: not-allowed;
 }
 
-.hiddenInput {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  width: 0;
-  height: 0;
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.modalLibre {
+  background: #1a1a1a;
+  border: 0.5px solid #3a3a3a;
+  border-radius: 12px;
+  padding: 22px;
+  width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalLibreTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0efe8;
+}
+
+.modalField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modalLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #5f5e5a;
+  letter-spacing: 0.06em;
+}
+
+.modalInput {
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #f0efe8;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.modalInput:focus {
+  border-color: #3a3a3a;
+}
+
+.modalInput::placeholder {
+  color: #5f5e5a;
+}
+
+.modalBtns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btnCancelar {
+  background: transparent;
+  border: 0.5px solid #2e2e2e;
+  color: #5f5e5a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s, opacity 0.15s;
+}
+
+.btnCancelar:hover {
+  border-color: #3a3a3a;
+  color: #888780;
+}
+
+.btnCancelar:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+.btnAgregar {
+  background: #1d9e75;
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, opacity 0.15s, transform 0.15s;
+}
+
+.btnAgregar:hover:not(:disabled) {
+  background: #0f6e56;
+}
+
+.btnAgregar:active:not(:disabled) {
+  opacity: 0.85;
+  transform: scale(0.96);
+}
+
+.btnAgregar:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
