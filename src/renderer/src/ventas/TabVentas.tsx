@@ -44,12 +44,12 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
   const tieneTemporales = carrito.some((it) => it.precio_modificado)
 
   useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    if (busqueda.trim().length < 2) {
-      setResultados([])
-      return
-    }
     timerRef.current = setTimeout(async () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (busqueda.trim().length < 2) {
+        setResultados([])
+        return
+      }
       const res = await window.api.productos.buscar(busqueda.trim())
       if (res.ok) setResultados(res.productos)
     }, 200)

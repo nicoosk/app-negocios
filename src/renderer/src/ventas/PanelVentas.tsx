@@ -6,9 +6,17 @@ import ModalDeudores from '../fiados/ModalDeudores'
 import { ShoppingCart } from 'lucide-react'
 const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
+interface ItemVenta {
+  nombre_producto: string
+  cantidad: number
+  subtotal: number
+}
+
 interface Venta {
+  id: number
   monto: number
   hora: string
+  items: ItemVenta[]
 }
 
 interface Fio {
@@ -139,7 +147,22 @@ export default function PanelVentas({ userId, username }: DashboardProps): JSX.E
           ) : (
             ventas.slice(0, 6).map((v, i) => (
               <div key={i} className={styles.row}>
-                <span className={styles.hora}>{v.hora.slice(0, 5)}</span>
+                <div className={styles.rowLeft}>
+                  <span className={styles.hora}>{v.hora.slice(0, 5)}</span>
+                  {v.items.length > 0 ? (
+                    <span className={styles.rowItems}>
+                      {v.items
+                        .map((it) =>
+                          it.cantidad > 1
+                            ? `${it.nombre_producto} ×${it.cantidad}`
+                            : it.nombre_producto
+                        )
+                        .join(' · ')}
+                    </span>
+                  ) : (
+                    <span className={styles.rowEmpty}>No hay items asociados</span>
+                  )}
+                </div>
                 <span className={`${styles.rowMonto} ${styles.green}`}>{fmt(v.monto)}</span>
               </div>
             ))
