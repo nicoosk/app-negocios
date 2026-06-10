@@ -2,12 +2,19 @@ import { JSX, useEffect, useState } from 'react'
 import styles from './Dashboard.module.css'
 import ModalDeudores from '@renderer/fiados/ModalDeudores'
 import { LayoutDashboard } from 'lucide-react'
+import { fmt } from '@renderer/utils/formatter'
 
-const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
+interface ItemVenta {
+  nombre_producto: string
+  cantidad: number
+  subtotal: number
+}
 
 interface Venta {
+  id: number
   monto: number
   hora: string
+  items: ItemVenta[]
 }
 
 interface Fio {
@@ -60,7 +67,7 @@ export default function Dashboard({ userId }: DashboardProps): JSX.Element {
     }
 
     cargar()
-  })
+  }, [])
 
   const deudoresActivos = deudores.filter((d) => d.deuda_total > 0)
 
@@ -111,14 +118,29 @@ export default function Dashboard({ userId }: DashboardProps): JSX.Element {
       <div className={styles.grids}>
         <div className={styles.bloque}>
           <span className={styles.bloqueLabel}>ÚLTIMAS VENTAS DE HOY</span>
-          <div className={styles.lista}>
+          <div className={styles.row}>
             {ventas.length === 0 ? (
               <span className={styles.empty}>Sin ventas aún hoy</span>
             ) : (
-              ventas.slice(0, 8).map((v, i) => (
-                <div key={i} className={styles.filaVenta}>
+              ventas.slice(0, 6).map((v, i) => (
+                <div key={i} className={styles.metaInfo}>
                   <span className={styles.hora}>{v.hora.slice(0, 5)}</span>
-                  <span className={`${styles.monto} ${styles.green}`}>{fmt(v.monto)}</span>
+                  <div className={styles.rowItems}>
+                    {v.items.length > 0 ? (
+                      <span>
+                        {v.items
+                          .map((it) =>
+                            it.cantidad > 1
+                              ? `${it.nombre_producto} ×${it.cantidad}`
+                              : it.nombre_producto
+                          )
+                          .join(' · ')}
+                      </span>
+                    ) : (
+                      <span className={styles.rowEmpty}>No hay items asociados</span>
+                    )}
+                  </div>
+                  <span className={`${styles.rowMonto} ${styles.green}`}>{fmt(v.monto)}</span>
                 </div>
               ))
             )}
