@@ -1,0 +1,210 @@
+.item {
+  background: #1a1a1a;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.itemLibre {
+  background: #161310;
+  border-color: #252010;
+}
+
+.itemEditing {
+  background: #0d1f16;
+  border-color: #1d9e7540;
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemNombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0efe8;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemLibre .itemNombre {
+  color: #88806a;
+}
+
+.itemPrecioRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  flex-wrap: nowrap;
+}
+
+.itemPrecioBase {
+  font-size: 13px;
+  color: #5f5e5a;
+}
+
+.itemPrecioBaseGris {
+  font-size: 11px;
+  color: #5f5e5a;
+  white-space: nowrap;
+}
+
+.itemPrecioTachado {
+  font-size: 12px;
+  color: #5f5e5a;
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.itemPrecioTemp {
+  font-size: 13px;
+  color: #1d9e75;
+  background: #0d2018;
+  border: 0.5px solid #1d4a30;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.itemPrecioPrefix {
+  font-size: 11px;
+  color: #5f5e5a;
+}
+
+.itemPrecioInput {
+  width: 60px;
+  background: #111;
+  border: 0.5px solid #1d9e75;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: #f0efe8;
+  outline: none;
+  font-family: inherit;
+}
+
+.btnConfirm {
+  background: #1d9e75;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 5px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.btnLapiz {
+  background: transparent;
+  border: none;
+  color: #3a3a3a;
+  padding: 2px 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.btnLapiz:hover {
+  color: #888780;
+  background: #222;
+}
+
+.btnLapizActive {
+  color: #1d9e75;
+}
+
+.btnLapizActive:hover {
+  color: #24c290;
+  background: #0d2018;
+}
+
+.libreTag {
+  font-size: 10px;
+  color: #5f5020;
+  background: #1e1c08;
+  border: 0.5px solid #3a3518;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.quantityWrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.quantityBtn {
+  width: 24px;
+  height: 24px;
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 6px;
+  color: #888780;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.quantityBtn:hover {
+  border-color: #3a3a3a;
+  color: #f0efe8;
+}
+
+.quantityBtn:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+.quantityValue {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 18px;
+  text-align: center;
+  color: #f0efe8;
+}
+
+.itemSub {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d9e75;
+  min-width: 56px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.itemSubLibre {
+  color: #88806a;
+}
+
+.btnDel {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #2e2e2e;
+  padding: 3px 4px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.btnDel:hover {
+  color: #e24b4a;
+  background: #2a1010;
+}
