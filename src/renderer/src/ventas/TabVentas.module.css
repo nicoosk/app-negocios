@@ -228,7 +228,7 @@
 }
 
 .btnVenta {
-  width: 100%;
+  flex: 1;
   background: #1d9e75;
   border: none;
   border-radius: 10px;
@@ -370,4 +370,197 @@
 .btnAgregar:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.botonesAccion {
+  display: flex;
+  gap: 8px;
+}
+
+.btnFio {
+  background: #1a1a1a;
+  border: 0.5px solid #534ab7;
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #7f77dd;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.btnFio:hover {
+  background: #1e1a3a;
+  border-color: #7f77dd;
+}
+
+.btnFio:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.modalFio {
+  background: #1a1a1a;
+  border: 0.5px solid #3a3a3a;
+  border-radius: 12px;
+  padding: 22px;
+  width: 360px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalFioHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalFioTitulo {
+  font-size: 14px;
+  font-weight: 600;
+  color:  #f0efe8;
+}
+
+.modalFioTotal {
+  font-size: 20px;
+  font-weight: 500;
+  color: #7f77dd;
+  letter-spacing: -0.5px;
+}
+
+.modalInputFio {
+  width: 100%;
+  background: #111;
+  border: 0.5px solid #534ab7;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #f0efe8;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.modalInputFio:focus {
+  border-color: #7f77dd;
+}
+
+.modalInputFio::placeholder {
+  color: #5f5e5a;
+}
+
+.deudorSel {
+  background: #1e1a3a;
+  border: 0.5px solid #7f77dd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.deudorSelInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.deudorNombre {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f0efe8;
+}
+
+.deudorDeuda {
+  font-size: 12px;
+  color: #5f5e5a;
+}
+
+.btnCambiar {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  color: #7f77dd;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.btnCambiar:hover {
+  color: #a09be8;
+}
+
+.sugerencias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.sugerenciaItem {
+  background: #111;
+  border: 0.5px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sugerenciaItem:hover {
+  background: #1e1a3a;
+  border-color: #7f77dd;
+}
+
+.sugerenciaNombre {
+  font-size: 13px;
+  color: #f0efe8;
+}
+
+.sugerenciaDeuda {
+  font-size: 11px;
+  color: #e24b4a;
+}
+
+.sugerenciaNuevo {
+  font-size: 11px;
+  color: #7f77dd;
+}
+
+.btnRegistrarFio {
+  background: #534ab7;
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.15s, opacity 0.15s;
+}
+
+.btnRegistrarFio:hover:not(:disabled) {
+  background: #3c3489;
+}
+
+.btnRegistrarFio:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btnRegistrarFio:active:not(:disabled) {
+  transform: scale(0.96);
+  opacity: 0.85;
 }

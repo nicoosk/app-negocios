@@ -1,6 +1,5 @@
 import { JSX, useEffect, useState } from 'react'
 import TabVentas from './TabVentas'
-import TabFiar from '../fiados/TabFiar'
 import styles from './PanelVentas.module.css'
 import ModalDeudores from '../fiados/ModalDeudores'
 import { ShoppingCart } from 'lucide-react'
@@ -30,10 +29,10 @@ interface DashboardProps {
   username: string
 }
 
-type tabs = 'ventas' | 'fiar'
+// type tabs = 'ventas' | 'fiar'
 
 export default function PanelVentas({ userId, username }: DashboardProps): JSX.Element {
-  const [tab, setTab] = useState<tabs>('ventas')
+  // const [tab, setTab] = useState<tabs>('ventas')
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -97,23 +96,11 @@ export default function PanelVentas({ userId, username }: DashboardProps): JSX.E
           <button className={styles.badge}>{username}</button>
         </div>
 
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${tab === 'ventas' ? styles.active : ''}`}
-            onClick={() => setTab('ventas')}
-          >
-            Ventas
-          </button>
-          <button
-            className={`${styles.tab} ${tab === 'fiar' ? styles.active : ''}`}
-            onClick={() => setTab('fiar')}
-          >
-            Fiar
-          </button>
-        </div>
-
-        {tab === 'ventas' && <TabVentas onVentaRegistrada={recargarVentas} />}
-        {tab === 'fiar' && <TabFiar userId={userId} onFioRegistrado={recargarFios} />}
+        <TabVentas
+          userId={userId}
+          onVentaRegistrada={recargarVentas}
+          onFioRegistrado={recargarFios}
+        />
       </div>
 
       <div className={styles.right}>
