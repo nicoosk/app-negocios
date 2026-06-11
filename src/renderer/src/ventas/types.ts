@@ -14,3 +14,9 @@ export interface ItemCarrito {
   cantidad: number
   subtotal: number
 }
+
+export interface Fiado {
+  id: number
+  nombre: string
+  deuda_total: number
+}

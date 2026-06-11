@@ -2,14 +2,21 @@ import { JSX, useEffect, useRef, useState } from 'react'
 import styles from './TabVentas.module.css'
 import { Plus, Search, ShoppingBag } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-import { ItemCarrito, Producto } from './types'
+import { Fiado, ItemCarrito, Producto } from './types'
 import CartItem from './ItemCarrito'
+import { similar } from '@renderer/utils/search'
 
 interface TabVentasProps {
+  userId: number
   onVentaRegistrada: () => void
+  onFioRegistrado: () => void
 }
 
-export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.Element {
+export default function TabVentas({
+  userId,
+  onVentaRegistrada,
+  onFioRegistrado
+}: TabVentasProps): JSX.Element {
   const [carrito, setCarrito] = useState<ItemCarrito[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [resultados, setResultados] = useState<Producto[]>([])
@@ -19,6 +26,17 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
   const [libreNombre, setLibreNombre] = useState('')
   const [libreMonto, setLibreMonto] = useState('')
   const [registrando, setRegistrando] = useState(false)
+
+  const [modalFio, setModalFio] = useState(false)
+  const [nombreFio, setNombreFio] = useState('')
+  const [todosDeudores, setTodosDeudores] = useState<Fiado[]>([])
+  const [sugerenciasFio, setSugerenciasFio] = useState<Fiado[]>([])
+  const [seleccionadoFio, setSeleccionadoFio] = useState<{
+    nombre: string
+    deuda_total: number
+  } | null>(null)
+  const [registrandoFio, setRegistrandoFio] = useState(false)
+  const fioInputRef = useRef<HTMLInputElement>(null)
 
   const searchRef = useRef<HTMLInputElement>(null)
   const precioInputRef = useRef<HTMLInputElement>(null)
@@ -55,6 +73,12 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
       setTimeout(() => libreNombreRef.current?.focus(), 30)
     }
   }, [modalLibre])
+
+  useEffect(() => {
+    if (modalFio) {
+      setTimeout(() => fioInputRef.current?.focus(), 30)
+    }
+  }, [modalFio])
 
   // ─── Handlers del carrito ───────────────────────────────────────────────────
 
@@ -168,6 +192,53 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
     searchRef.current?.focus()
   }
 
+  const abrirModalFio = async (): Promise<void> => {
+    const deudores = await window.api.fiados.buscar('')
+    setTodosDeudores(deudores)
+    setNombreFio('')
+    setSugerenciasFio([])
+    setSeleccionadoFio(null)
+    setModalFio(true)
+  }
+
+  const cerrarModalFio = (): void => {
+    setModalFio(false)
+    setNombreFio('')
+    setSugerenciasFio([])
+    setSeleccionadoFio(null)
+  }
+
+  const buscarDeudor = (val: string): void => {
+    setNombreFio(val)
+    setSeleccionadoFio(null)
+    if (val.length < 2) {
+      setSugerenciasFio([])
+      return
+    }
+    setSugerenciasFio(todosDeudores.filter((d) => similar(val, d.nombre)))
+  }
+
+  const registrarFio = async (): Promise<void> => {
+    if (!seleccionadoFio || registrandoFio) return
+    setRegistrandoFio(true)
+    const lineas = carrito.map((it) => ({
+      producto_id: it.producto_id,
+      nombre: it.nombre,
+      precio_unitario: it.precio_unitario,
+      cantidad: it.cantidad,
+      subtotal: it.subtotal
+    }))
+    const result = await window.api.fiados.registrar(seleccionadoFio.nombre, total, userId, lineas)
+    if (result.ok) {
+      setCarrito([])
+      setBusqueda('')
+      setResultados([])
+      cerrarModalFio()
+      onFioRegistrado()
+    }
+    setRegistrandoFio(false)
+  }
+
   return (
     <div className={styles.wrap}>
       <div className={styles.searchRow}>
@@ -257,9 +328,14 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
               <span className={styles.totalVal}>{fmt(total)}</span>
             </div>
           </div>
-          <button className={styles.btnVenta} disabled={registrando} onClick={registrarVenta}>
-            {registrando ? 'Registrando...' : 'Registrar venta'}
-          </button>
+          <div className={styles.botonesAccion}>
+            <button className={styles.btnVenta} disabled={registrando} onClick={registrarVenta}>
+              {registrando ? 'Registrando...' : 'Registrar venta'}
+            </button>
+            <button className={styles.btnFio} onClick={abrirModalFio}>
+              Fiar
+            </button>
+          </div>
         </div>
       )}
 
@@ -304,6 +380,87 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
                 onClick={agregarMontoLibre}
               >
                 Agregar al carrito
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalFio && (
+        <div className={styles.overlay} onClick={cerrarModalFio}>
+          <div className={styles.modalFio} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalFioHeader}>
+              <span className={styles.modalFioTitulo}>Registrar como fío</span>
+              <span className={styles.modalFioTotal}>{fmt(total)}</span>
+            </div>
+
+            <div className={styles.modalField}>
+              <label className={styles.modalLabel}>FIADO A</label>
+              {seleccionadoFio ? (
+                <div className={styles.deudorSel}>
+                  <div className={styles.deudorSelInfo}>
+                    <span className={styles.deudorNombre}>{seleccionadoFio.nombre}</span>
+                    <span className={styles.deudorDeuda}>
+                      {seleccionadoFio.deuda_total > 0
+                        ? `Debe ${fmt(seleccionadoFio.deuda_total)} → quedará en ${fmt(seleccionadoFio.deuda_total + total)}`
+                        : `Sin deuda → quedará en ${fmt(total)}`}
+                    </span>
+                  </div>
+                  <button className={styles.btnCambiar} onClick={() => setSeleccionadoFio(null)}>
+                    Cambiar
+                  </button>
+                </div>
+              ) : (
+                <input
+                  ref={fioInputRef}
+                  className={styles.modalInputFio}
+                  placeholder="Nombre de la persona..."
+                  value={nombreFio}
+                  onChange={(e) => buscarDeudor(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') cerrarModalFio()
+                  }}
+                  autoComplete="off"
+                />
+              )}
+            </div>
+
+            {!seleccionadoFio && nombreFio.length >= 2 && (
+              <div className={styles.sugerencias}>
+                {sugerenciasFio.map((d) => (
+                  <div
+                    key={d.id}
+                    className={styles.sugerenciaItem}
+                    onClick={() => setSeleccionadoFio(d)}
+                  >
+                    <span className={styles.sugerenciaNombre}>{d.nombre}</span>
+                    <span className={styles.sugerenciaDeuda}>
+                      {d.deuda_total > 0 ? `Debe ${fmt(d.deuda_total)}` : 'Sin deuda'}
+                    </span>
+                  </div>
+                ))}
+                {nombreFio.length >= 2 && (
+                  <div
+                    className={styles.sugerenciaItem}
+                    onClick={() => setSeleccionadoFio({ nombre: nombreFio, deuda_total: 0 })}
+                  >
+                    <span className={styles.sugerenciaNombre}>{nombreFio}</span>
+                    <span className={styles.sugerenciaNuevo}>+ Crear nuevo</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className={styles.modalBtns}>
+              <button className={styles.btnCancelar} onClick={cerrarModalFio}>
+                Cancelar
+              </button>
+              <button
+                className={styles.btnRegistrarFio}
+                disabled={!seleccionadoFio || registrandoFio}
+                onClick={registrarFio}
+              >
+                {registrandoFio ? 'Registrando...' : 'Registrar fío'}
               </button>
             </div>
           </div>
