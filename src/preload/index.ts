@@ -1,18 +1,19 @@
 import { contextBridge, ipcRenderer, shell } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { UpdaterPayload } from './types'
+import { UpdaterPayload, LineaCarrito } from './types'
 
 // Custom APIs for renderer
 const api = {
   login: (username: string, pin: string) => ipcRenderer.invoke('auth:login', username, pin),
   ventas: {
-    registrar: (monto: number) => ipcRenderer.invoke('ventas:registrar', monto),
+    registrar: (monto: number, lineas: LineaCarrito[]) =>
+      ipcRenderer.invoke('ventas:registrar', monto, lineas),
     hoy: () => ipcRenderer.invoke('ventas:hoy')
   },
   fiados: {
     buscar: (query: string) => ipcRenderer.invoke('fiados:buscar', query),
-    registrar: (nombre: string, monto: number, id_usuario: number) =>
-      ipcRenderer.invoke('fiados:registrar', nombre, monto, id_usuario),
+    registrar: (nombre: string, monto: number, id_usuario: number, lineas: LineaCarrito[]) =>
+      ipcRenderer.invoke('fiados:registrar', nombre, monto, id_usuario, lineas),
     hoy: () => ipcRenderer.invoke('fiados:hoy'),
     total: () => ipcRenderer.invoke('fiados:total'),
     todos: () => ipcRenderer.invoke('fiados:todos'),
@@ -98,7 +99,8 @@ const api = {
         stock,
         unidad
       ),
-    eliminar: (id: number) => ipcRenderer.invoke('productos:eliminar', id)
+    eliminar: (id: number) => ipcRenderer.invoke('productos:eliminar', id),
+    buscar: (query: string) => ipcRenderer.invoke('productos:buscar', query)
   }
 }
 

@@ -1,6 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { Usuario } from '@renderer/usuarios/PanelUsuarios'
-import { UpdaterPayload } from './types'
+import { FiadoHoy, LineaCarrito, UpdaterPayload, VentaHoy } from './types'
 
 type DefaultResponse = {
   ok: boolean
@@ -27,18 +27,23 @@ declare global {
         pin: string
       ) => Promise<{ ok: boolean; user: Usuario; error?: string }>
       ventas: {
-        registrar: (monto: number) => Promise<{ ok: boolean }>
+        registrar: (monto: number, lineas: LineaCarrito[]) => Promise<{ ok: boolean }>
         hoy: () => Promise<{
-          ventas: { monto: number; hora: string }[]
+          ventas: VentaHoy[]
           total: number
           count: number
         }>
       }
       fiados: {
         buscar: (query: string) => Promise<{ id: number; nombre: string; deuda_total: number }[]>
-        registrar: (nombre: string, monto: number, id_usuario: number) => Promise<{ ok: boolean }>
+        registrar: (
+          nombre: string,
+          monto: number,
+          id_usuario: number,
+          lineas: LineaCarrito[]
+        ) => Promise<{ ok: boolean }>
         hoy: () => Promise<{
-          fios: { nombre: string; monto: number; hora: string }[]
+          fios: FiadoHoy[]
           total: number
           deudores: number
         }>
@@ -131,6 +136,7 @@ declare global {
           unidad: string
         ) => Promise<DefaultResponse>
         eliminar: (id: number) => Promise<DefaultResponse>
+        buscar: (query: string) => Promise<{ ok: boolean; productos: Producto[] }>
       }
     }
   }

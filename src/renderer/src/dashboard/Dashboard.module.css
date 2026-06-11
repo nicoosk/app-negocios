@@ -210,3 +210,32 @@
   background: #d4000024;
   transform: scale(0.99);
 }
+
+.metaInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.metaInfo:last-child {
+  border-bottom: none;
+}
+
+.rowItems {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: #5f5e5a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowMonto {
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}

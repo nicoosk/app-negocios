@@ -1,6 +1,7 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './PanelInventario.module.css'
 import { Package, Pencil, Plus, Search, Trash2, TriangleAlert } from 'lucide-react'
+import { fmt } from '@renderer/utils/formatter'
 
 interface Producto {
   id: number
@@ -21,10 +22,8 @@ interface FormState {
   unidad: string
 }
 
-const UNIDADES = ['unidad', 'kg', 'litro', 'docena']
+const UNIDADES = ['unidad', 'gr', 'kg', 'ml', 'litro', 'docena']
 const UMBRAL_STOCK_BAJO = 5
-
-const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
 
 const formVacio = (): FormState => ({
   nombre: '',
@@ -177,7 +176,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
                 <th>Precio</th>
                 <th>Stock</th>
                 <th>Unidad</th>
-                <th></th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
