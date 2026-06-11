@@ -1,24 +1,9 @@
 import { JSX, useEffect, useRef, useState } from 'react'
 import styles from './TabVentas.module.css'
-import { Check, Minus, Pencil, Plus, Search, ShoppingBag, X } from 'lucide-react'
+import { Plus, Search, ShoppingBag } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-
-interface Producto {
-  id: number
-  nombre: string
-  precio_venta: number
-  stock: number
-}
-
-interface ItemCarrito {
-  producto_id: number | null
-  nombre: string
-  precio_base: number
-  precio_unitario: number
-  precio_modificado: boolean
-  cantidad: number
-  subtotal: number
-}
+import { ItemCarrito, Producto } from './types'
+import CartItem from './ItemCarrito'
 
 interface TabVentasProps {
   onVentaRegistrada: () => void
@@ -34,6 +19,7 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
   const [libreNombre, setLibreNombre] = useState('')
   const [libreMonto, setLibreMonto] = useState('')
   const [registrando, setRegistrando] = useState(false)
+
   const searchRef = useRef<HTMLInputElement>(null)
   const precioInputRef = useRef<HTMLInputElement>(null)
   const libreNombreRef = useRef<HTMLInputElement>(null)
@@ -69,6 +55,8 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
       setTimeout(() => libreNombreRef.current?.focus(), 30)
     }
   }, [modalLibre])
+
+  // ─── Handlers del carrito ───────────────────────────────────────────────────
 
   const agregarProducto = (p: Producto): void => {
     setCarrito((prev) => {
@@ -200,13 +188,12 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
                 <div
                   key={p.id}
                   className={styles.dropdownItem}
-                  onMouseDown={(e) => e.preventDefault}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => agregarProducto(p)}
                 >
-                  <span className={styles.dropdownNombe}>{p.nombre}</span>
+                  <span className={styles.dropdownNombre}>{p.nombre}</span>
                   <div className={styles.dropdownMeta}>
                     <span className={styles.dropdownPrecio}>{fmt(p.precio_venta)}</span>
-                    {/* IMPORTANTE CAMBIAR ESTA CONDICION DE STOCK POR LA CONFIGURACIÓN FUTURA */}
                     <span
                       className={p.stock <= 5 ? styles.dropdownStockBajo : styles.dropdownStock}
                     >
@@ -230,95 +217,26 @@ export default function TabVentas({ onVentaRegistrada }: TabVentasProps): JSX.El
             <ShoppingBag size={26} className={styles.cartEmptyIcon} />
             <span className={styles.cartEmptyTitle}>El carrito está vacío</span>
             <span className={styles.cartEmptyHint}>
-              Busca un producto arriba o Agrega un monto libre
+              Busca un producto arriba o agrega un monto libre para empezar
             </span>
           </div>
         ) : (
           <div className={styles.cartList}>
             {carrito.map((item, idx) => (
-              <div
+              <CartItem
                 key={idx}
-                className={`${styles.item} ${item.producto_id === null ? styles.itemLibre : ''} ${editandoPrecio === idx ? styles.itemEditing : ''}`}
-              >
-                <div className={styles.itemInfo}>
-                  <span className={styles.itemNombre}>{item.nombre}</span>
-                  <div className={styles.itemPrecioRow}>
-                    {editandoPrecio === idx ? (
-                      <>
-                        <span className={styles.itemPrecioBaseGris}>
-                          base {fmt(item.precio_base)}
-                        </span>
-                        <span className={styles.itemPrecioPrefix}>$</span>
-                        <input
-                          ref={precioInputRef}
-                          className={styles.itemPrecioInput}
-                          value={precioTemp}
-                          onChange={(e) => setPrecioTemp(e.target.value.replace(/\D/g, ''))}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') confirmarEditPrecio(idx)
-                            if (e.key === 'Escape') setEditandoPrecio(null)
-                          }}
-                          onBlur={() => confirmarEditPrecio(idx)}
-                        />
-                        <button
-                          className={styles.btnConfirm}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => confirmarEditPrecio(idx)}
-                        >
-                          <Check size={10} />
-                        </button>
-                      </>
-                    ) : item.producto_id === null ? (
-                      <span className={styles.libreTag}>monto libre</span>
-                    ) : (
-                      <>
-                        {item.precio_modificado ? (
-                          <>
-                            <span className={styles.itemPrecioTachado}>
-                              {fmt(item.precio_base)}
-                            </span>
-                            <span className={styles.itemPrecioTemp}>
-                              {fmt(item.precio_unitario)} temporal
-                            </span>
-                          </>
-                        ) : (
-                          <span className={styles.itemPrecioBase}>
-                            {fmt(item.precio_unitario)} c/u
-                          </span>
-                        )}
-                        <button
-                          className={`${styles.btnLapiz} ${item.precio_modificado ? styles.btnLapizActive : ''}`}
-                          onClick={() => iniciarEditPrecio(idx)}
-                          title="Modificar precio para esta venta"
-                        >
-                          <Pencil size={10} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {item.producto_id !== null && (
-                  <div className={styles.quantityWrap}>
-                    <button className={styles.quantityBtn} onClick={() => cambiarCantidad(idx, -1)}>
-                      <Minus size={10} />
-                    </button>
-                    <span className={styles.quantityValue}>{item.cantidad}</span>
-                    <button className={styles.quantityBtn} onClick={() => cambiarCantidad(idx, 1)}>
-                      <Plus size={10} />
-                    </button>
-                  </div>
-                )}
-
-                <span
-                  className={`${styles.itemSub} ${item.producto_id === null ? styles.itemSubLibre : ''}`}
-                >
-                  {fmt(item.subtotal)}
-                </span>
-                <button className={styles.btnDel} onClick={() => quitarItem(idx)}>
-                  <X size={12} />
-                </button>
-              </div>
+                idx={idx}
+                item={item}
+                editandoPrecio={editandoPrecio}
+                precioTemp={precioTemp}
+                precioInputRef={precioInputRef}
+                onCambiarCantidad={cambiarCantidad}
+                onQuitar={quitarItem}
+                onIniciarEdit={iniciarEditPrecio}
+                onConfirmarEdit={confirmarEditPrecio}
+                onCancelarEdit={() => setEditandoPrecio(null)}
+                onSetPrecioTemp={setPrecioTemp}
+              />
             ))}
           </div>
         )}
