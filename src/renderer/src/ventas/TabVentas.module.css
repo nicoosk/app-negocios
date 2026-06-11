@@ -482,6 +482,10 @@
   color: #5f5e5a;
 }
 
+.deudorMontoDeuda {
+  color: #e24b4a;
+}
+
 .btnCambiar {
   background: transparent;
   border: none;
@@ -562,5 +566,20 @@
 
 .btnRegistrarFio:active:not(:disabled) {
   transform: scale(0.96);
+  opacity: 0.85;
+}
+
+.hintClickable {
+  color: #97926982;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.15s, opacity 0.15s;
+}
+
+.hintClickable:hover {
+  color: #979269c6
+}
+
+.hintClickable:active {
   opacity: 0.85;
 }
