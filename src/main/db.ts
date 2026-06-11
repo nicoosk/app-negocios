@@ -48,7 +48,27 @@ db.exec(`
     unidad        TEXT NOT NULL DEFAULT 'unidad',
     activo        INTEGER NOT NULL DEFAULT 1,
     creado_en     TEXT NOT NULL DEFAULT (datetime('now'))
-  )
+  );
+
+  CREATE TABLE IF NOT EXISTS ventas_detalle (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    venta_id            INTEGER NOT NULL REFERENCES ventas(id),
+    producto_id         INTEGER REFERENCES productos(id),
+    nombre_producto     TEXT NOT NULL,
+    precio_unitario     INTEGER NOT NULL,
+    cantidad            INTEGER NOT NULL DEFAULT 1,
+    subtotal            INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS fiados_detalle_items (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    detalle_id          INTEGER NOT NULL REFERENCES fiados_detalle(id),
+    producto_id         INTEGER REFERENCES productos(id),
+    nombre_producto     TEXT NOT NULL,
+    precio_unitario     INTEGER NOT NULL,
+    cantidad            INTEGER NOT NULL DEFAULT 1,
+    subtotal            INTEGER NOT NULL
+  );
 `)
 
 // START: Bloque de migraciones
@@ -160,14 +180,66 @@ export function deleteUser(id: number): Database.RunResult {
   return db.prepare('DELETE FROM usuarios WHERE id = ?').run(id)
 }
 
-export function registrarVenta(monto: number): Database.RunResult {
-  return db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
+export interface LineaCarrito {
+  producto_id: number | null
+  nombre: string
+  precio_unitario: number
+  cantidad: number
+  subtotal: number
 }
 
-export function getVentasHoy(): { monto: number; hora: string }[] {
-  return db
-    .prepare("SELECT monto, hora FROM ventas WHERE fecha = date('now') ORDER BY id DESC LIMIT 20")
-    .all() as { monto: number; hora: string }[]
+export function registrarVenta(monto: number, lineas: LineaCarrito[]): Database.RunResult {
+  return db.transaction(() => {
+    const venta = db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
+    const ventaId = venta.lastInsertRowid
+
+    for (const l of lineas) {
+      db.prepare(
+        `INSERT INTO ventas_detalle
+        (venta_id, producto_id, nombre_producto, precio_unitario, cantidad, subtotal)
+        VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(ventaId, l.producto_id, l.nombre, l.precio_unitario, l.cantidad, l.subtotal)
+
+      if (l.producto_id !== null) {
+        db.prepare('UPDATE productos SET stock = MAX(0, stock - ?) WHERE id = ?').run(
+          l.cantidad,
+          l.producto_id
+        )
+      }
+    }
+
+    return venta
+  })()
+}
+
+interface ItemVenta {
+  nombre_producto: string
+  cantidad: number
+  subtotal: number
+}
+
+export interface VentaHoy {
+  id: number
+  monto: number
+  hora: string
+  items: ItemVenta[]
+}
+
+export function getVentasHoy(): VentaHoy[] {
+  const ventas = db
+    .prepare(
+      "SELECT id, monto, hora FROM ventas WHERE fecha = date('now') ORDER BY id DESC LIMIT 20"
+    )
+    .all() as { id: number; monto: number; hora: string }[]
+
+  const stmtItems = db.prepare(
+    'SELECT nombre_producto, cantidad, subtotal FROM ventas_detalle WHERE venta_id = ? ORDER BY id ASC'
+  )
+
+  return ventas.map((v) => ({
+    items: stmtItems.all(v.id) as ItemVenta[],
+    ...v
+  }))
 }
 
 export function getTotalVentasHoy(): { total: number; count: number } {
@@ -189,35 +261,76 @@ export function buscarFiados(): { id: number; nombre: string; deuda_total: numbe
 export function registrarFio(
   nombre: string,
   monto: number,
-  id_usuario: number
+  id_usuario: number,
+  lineas: LineaCarrito[] = []
 ): Database.RunResult {
-  const existing = db.prepare('SELECT id FROM fiados WHERE nombre = ?').get(nombre) as
-    | { id: number }
-    | undefined
+  return db.transaction(() => {
+    const existing = db.prepare('SELECT id FROM fiados WHERE nombre = ?').get(nombre) as
+      | { id: number }
+      | undefined
 
-  if (existing) {
-    db.prepare('UPDATE fiados SET deuda_total = deuda_total + ? WHERE id = ?').run(
-      monto,
-      existing.id
-    )
-    return db
-      .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
-      .run(existing.id, monto, id_usuario)
-  } else {
-    const result = db
-      .prepare('INSERT INTO fiados (nombre, deuda_total) VALUES (?, ?)')
-      .run(nombre, monto)
-    return db
-      .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
-      .run(result.lastInsertRowid, monto, id_usuario)
-  }
+    let fiadoId: number | bigint
+    let result: Database.RunResult
+
+    if (existing) {
+      db.prepare('UPDATE fiados SET deuda_total = deuda_total + ? WHERE id = ?').run(
+        monto,
+        existing.id
+      )
+      result = db
+        .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
+        .run(existing.id, monto, id_usuario)
+      fiadoId = existing.id
+    } else {
+      const fiado = db
+        .prepare('INSERT INTO fiados (nombre, deuda_total) VALUES (?, ?)')
+        .run(nombre, monto)
+      fiadoId = fiado.lastInsertRowid
+      result = db
+        .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
+        .run(fiadoId, monto, id_usuario)
+    }
+
+    const detalleId = result.lastInsertRowid
+
+    for (const l of lineas) {
+      db.prepare(
+        `INSERT INTO fiados_detalle_items
+          (detalle_id, producto_id, nombre_producto, precio_unitario, cantidad, subtotal)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `
+      ).run(detalleId, l.producto_id, l.nombre, l.precio_unitario, l.cantidad, l.subtotal)
+
+      if (l.producto_id !== null) {
+        db.prepare('UPDATE productos SET stock = MAX(0, stock - ?) WHERE id = ?').run(
+          l.cantidad,
+          l.producto_id
+        )
+      }
+    }
+
+    return result
+  })()
 }
 
-export function getFiadosHoy(): { nombre: string; monto: number; hora: string }[] {
-  return db
+interface ItemFiado {
+  nombre_producto: string
+  cantidad: number
+  subtotal: number
+}
+
+export interface FiadoHoy {
+  nombre: string
+  monto: number
+  hora: string
+  items: ItemFiado[]
+}
+
+export function getFiadosHoy(): FiadoHoy[] {
+  const fiados = db
     .prepare(
       `
-      SELECT f.nombre, fd.monto, fd.hora
+      SELECT f.nombre, fd.id AS detalle_id, fd.monto, fd.hora
       FROM fiados_detalle fd
       JOIN fiados f ON f.id = fd.fiado_id
       WHERE fd.fecha = date('now')
@@ -226,7 +339,18 @@ export function getFiadosHoy(): { nombre: string; monto: number; hora: string }[
       LIMIT 10
     `
     )
-    .all() as { nombre: string; monto: number; hora: string }[]
+    .all() as { nombre: string; detalle_id: number; monto: number; hora: string }[]
+
+  const stmtItems = db.prepare(
+    'SELECT nombre_producto, cantidad, subtotal FROM fiados_detalle_items WHERE detalle_id = ? ORDER BY id ASC'
+  )
+
+  return fiados.map((f) => ({
+    nombre: f.nombre,
+    monto: f.monto,
+    hora: f.hora,
+    items: stmtItems.all(f.detalle_id) as ItemFiado[]
+  }))
 }
 
 export function getTotalFiadosHoy(): { total: number; deudores: number } {
@@ -304,7 +428,10 @@ export function editarVenta(id: number, monto: number): Database.RunResult {
 }
 
 export function eliminarVenta(id: number): Database.RunResult {
-  return db.prepare('DELETE FROM ventas WHERE id = ?').run(id)
+  return db.transaction(() => {
+    db.prepare('DELETE FROM ventas_detalle WHERE venta_id = ?').run(id)
+    return db.prepare('DELETE FROM ventas WHERE id = ?').run(id)
+  })()
 }
 
 export function convertirVentaAFiado(id: number, nombre: string, id_usuario: number): void {
@@ -314,6 +441,7 @@ export function convertirVentaAFiado(id: number, nombre: string, id_usuario: num
 
   if (!venta) throw new Error('Venta no encontrada')
   db.transaction(() => {
+    db.prepare('DELETE FROM ventas_detalle WHERE venta_id = ?').run(id)
     db.prepare('DELETE FROM ventas WHERE id = ?').run(id)
     registrarFio(nombre, venta.monto, id_usuario)
   })()
@@ -365,6 +493,7 @@ export function editarFiadoDetalle(
 
 export function eliminarFiadoDetalle(detalle_id: number, fiado_id: number, monto: number): void {
   db.transaction(() => {
+    db.prepare('DELETE FROM fiados_detalle_item WHERE detalle_id = ?').run(detalle_id)
     db.prepare('DELETE FROM fiados_detalle WHERE id = ?').run(detalle_id)
     db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total - ?) WHERE id = ?').run(
       monto,
@@ -433,6 +562,14 @@ export function actualizarProducto(
 
 export function eliminarProducto(id: number): Database.RunResult {
   return db.prepare('UPDATE productos SET activo = 0 WHERE id = ?').run(id)
+}
+
+export function buscarProductosPorNombre(query: string): Producto[] {
+  return db
+    .prepare(
+      'SELECT * FROM productos WHERE activo = 1 AND nombre LIKE ? ORDER BY nombre ASC LIMIT 12'
+    )
+    .all(`%${query}%`) as Producto[]
 }
 
 export default db

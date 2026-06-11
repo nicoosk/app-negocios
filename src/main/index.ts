@@ -6,6 +6,7 @@ import {
   abonarFiado,
   actualizarProducto,
   buscarFiados,
+  buscarProductosPorNombre,
   convertirFiadoAVenta,
   convertirVentaAFiado,
   crearProducto,
@@ -27,6 +28,7 @@ import {
   getTotalVentasHoy,
   getVentasAdmin,
   getVentasHoy,
+  LineaCarrito,
   listarProductos,
   listUsers,
   registrarFio,
@@ -45,9 +47,9 @@ ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   }
 })
 
-ipcMain.handle('ventas:registrar', (_e, monto: number) => {
+ipcMain.handle('ventas:registrar', (_e, monto: number, lineas: LineaCarrito[]) => {
   try {
-    registrarVenta(monto)
+    registrarVenta(monto, lineas)
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -64,15 +66,18 @@ ipcMain.handle('fiados:buscar', () => {
   return buscarFiados()
 })
 
-ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number, id_usuario: number) => {
-  try {
-    registrarFio(nombre, monto, id_usuario)
-    return { ok: true }
-  } catch (err) {
-    console.error(err)
-    return { ok: false }
+ipcMain.handle(
+  'fiados:registrar',
+  (_e, nombre: string, monto: number, id_usuario: number, lineas: LineaCarrito[]) => {
+    try {
+      registrarFio(nombre, monto, id_usuario, lineas)
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { ok: false }
+    }
   }
-})
+)
 
 ipcMain.handle('fiados:hoy', () => ({
   fios: getFiadosHoy(),
@@ -310,6 +315,15 @@ ipcMain.handle('productos:eliminar', (_e, id: number) => {
   } catch (err) {
     console.error(err)
     return { ok: false }
+  }
+})
+
+ipcMain.handle('productos:buscar', (_e, query: string) => {
+  try {
+    return { ok: true, productos: buscarProductosPorNombre(query) }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, productos: [] }
   }
 })
 
