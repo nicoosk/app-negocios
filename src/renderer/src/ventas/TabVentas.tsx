@@ -288,7 +288,10 @@ export default function TabVentas({
             <ShoppingBag size={26} className={styles.cartEmptyIcon} />
             <span className={styles.cartEmptyTitle}>El carrito está vacío</span>
             <span className={styles.cartEmptyHint}>
-              Busca un producto arriba o agrega un monto libre para empezar
+              Busca un producto arriba o{' '}
+              <span className={styles.hintClickable} onClick={() => setModalLibre(true)}>
+                Agrega un monto libre para empezar
+              </span>
             </span>
           </div>
         ) : (
@@ -400,11 +403,22 @@ export default function TabVentas({
                 <div className={styles.deudorSel}>
                   <div className={styles.deudorSelInfo}>
                     <span className={styles.deudorNombre}>{seleccionadoFio.nombre}</span>
-                    <span className={styles.deudorDeuda}>
-                      {seleccionadoFio.deuda_total > 0
-                        ? `Debe ${fmt(seleccionadoFio.deuda_total)} → quedará en ${fmt(seleccionadoFio.deuda_total + total)}`
-                        : `Sin deuda → quedará en ${fmt(total)}`}
-                    </span>
+                    <div className={styles.deudorDeuda}>
+                      {seleccionadoFio.deuda_total > 0 ? (
+                        <span>
+                          Debe{' '}
+                          <span className={styles.deudorMontoDeuda}>
+                            {fmt(seleccionadoFio.deuda_total)}
+                          </span>{' '}
+                          → quedará en{' '}
+                          <span className={styles.deudorMontoDeuda}>
+                            {fmt(seleccionadoFio.deuda_total + total)}
+                          </span>
+                        </span>
+                      ) : (
+                        <span>Sin deuda → quedará en {fmt(total)}</span>
+                      )}
+                    </div>
                   </div>
                   <button className={styles.btnCambiar} onClick={() => setSeleccionadoFio(null)}>
                     Cambiar
