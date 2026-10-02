@@ -6,7 +6,9 @@ import {
   abonarFiado,
   actualizarProducto,
   buscarFiados,
+  buscarPorCodigoBarra,
   buscarProductosPorNombre,
+  contarProductosNuevos,
   convertirFiadoAVenta,
   convertirVentaAFiado,
   crearProducto,
@@ -32,7 +34,8 @@ import {
   listarProductos,
   listUsers,
   registrarFio,
-  registrarVenta
+  registrarVenta,
+  resolverProductoNuevo
 } from './db'
 import { iniciarUpdater, instalarUpdate } from './updater'
 
@@ -324,6 +327,34 @@ ipcMain.handle('productos:buscar', (_e, query: string) => {
   } catch (err) {
     console.error(err)
     return { ok: false, productos: [] }
+  }
+})
+
+ipcMain.handle('productos:buscarPorCodigoBarra', (_e, codigoEscaneado: string) => {
+  try {
+    return { ok: true, producto: buscarPorCodigoBarra(codigoEscaneado) }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+})
+
+ipcMain.handle('productos:resolverNuevo', (_e, id: number, precio_venta: number, stock: number) => {
+  try {
+    resolverProductoNuevo(id, precio_venta, stock)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+})
+
+ipcMain.handle('productos:contarNuevos', () => {
+  try {
+    return { ok: true, total: contarProductosNuevos() }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, error: err }
   }
 })
 

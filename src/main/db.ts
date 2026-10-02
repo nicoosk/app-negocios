@@ -105,12 +105,25 @@ try {
     migrationsCount++
   }
 
+  const columnasProductos = db.pragma('table_info(productos)') as { name: string }[]
+
+  const tieneEsNuevo = columnasProductos.some((c) => c.name == 'es_nuevo')
+
+  if (!tieneEsNuevo) {
+    console.log(
+      `[db : migrations] No se encontró la columna es_nuevo para la tabla productos. Agregando...`
+    )
+    db.exec('ALTER TABLE productos ADD COLUMN es_nuevo INTEGER NOT NULL DEFAULT 0')
+    console.log(`[db : migrations] Migración aplicada: Columna es_nuevo agregada.`)
+    migrationsCount++
+  }
+
   console.log(
     `[db : migrations] Fin del proceso. ${migrationsCount === 0 ? 'No se realizaron migraciones.' : `Migraciones realizadas con éxito: ${migrationsCount}.`}`
   )
 } catch (err) {
   console.error(
-    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} con éxito`
+    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} migraciones con éxito`
   )
   console.error(err)
 }
@@ -523,6 +536,15 @@ interface Producto {
   unidad: string
   activo: number
   creado_en: string
+  es_nuevo: number
+}
+
+function variantesCodigoBarra(codigo: string): string[] {
+  codigo = codigo.trim()
+  const variantes: string[] = [codigo]
+  if (codigo.length == 12) variantes.push(`0${codigo}`)
+  if (codigo.length == 13 && codigo.startsWith('0')) variantes.push(codigo.slice(1))
+  return variantes
 }
 
 export function listarProductos(): Producto[] {
@@ -536,13 +558,14 @@ export function crearProducto(
   codigo_barra: string | null,
   precio_venta: number,
   stock: number,
-  unidad: string
+  unidad: string,
+  es_nuevo: number = 0
 ): Database.RunResult {
   return db
     .prepare(
-      'INSERT INTO productos (nombre, codigo_barra, precio_venta, stock, unidad) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO productos (nombre, codigo_barra, precio_venta, stock, unidad, es_nuevo) VALUES (?, ?, ?, ?, ?, ?)'
     )
-    .run(nombre, codigo_barra, precio_venta, stock, unidad)
+    .run(nombre, codigo_barra, precio_venta, stock, unidad, es_nuevo)
 }
 
 export function actualizarProducto(
@@ -570,6 +593,49 @@ export function buscarProductosPorNombre(query: string): Producto[] {
       'SELECT * FROM productos WHERE activo = 1 AND nombre LIKE ? ORDER BY nombre ASC LIMIT 12'
     )
     .all(`%${query}%`) as Producto[]
+}
+
+export function buscarPorCodigoBarra(codigoEscaneado: string): Producto | null {
+  const codigo = codigoEscaneado.trim()
+
+  for (const variante of variantesCodigoBarra(codigo)) {
+    const producto = db
+      .prepare('SELECT * FROM productos WHERE activo = 1 AND codigo_barra = ?')
+      .get(variante) as Producto
+    if (producto) return producto
+  }
+
+  // Caso raro: el nombre del producto es el código de barras
+  for (const variante of variantesCodigoBarra(codigo)) {
+    const producto = db
+      .prepare('SELECT * FROM productos WHERE activo = 1 AND nombre = ?')
+      .get(variante) as Producto
+    if (producto) return producto
+  }
+
+  // Si no existe, lo creamos en la db y lo marcamos como nuevo
+  crearProducto('', codigo, 0, 1, '', 1)
+  return buscarPorCodigoBarra(codigo)
+}
+
+export function contarProductosNuevos(): { total: number } {
+  return db
+    .prepare('SELECT COUNT(*) AS total FROM productos WHERE activo = 1 AND es_nuevo = 1')
+    .get() as {
+    total: number
+  }
+}
+
+export function resolverProductoNuevo(
+  id: number,
+  precio_venta: number,
+  stock: number
+): Database.RunResult {
+  if (!Number.isFinite(precio_venta) || precio_venta <= 0 || stock <= 0)
+    throw new Error(`El valor de precio de venta o stock no debe ser 0 o negativo.`)
+  return db
+    .prepare('UPDATE productos SET precio_venta = ?, stock = ?, es_nuevo = 0 WHERE id = ?')
+    .run(precio_venta, stock, id)
 }
 
 export default db

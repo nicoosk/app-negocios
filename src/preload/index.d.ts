@@ -16,6 +16,7 @@ interface Producto {
   unidad: string
   activo: number
   creado_en: string
+  es_nuevo: number
 }
 
 declare global {
@@ -137,6 +138,11 @@ declare global {
         ) => Promise<DefaultResponse>
         eliminar: (id: number) => Promise<DefaultResponse>
         buscar: (query: string) => Promise<{ ok: boolean; productos: Producto[] }>
+        buscarPorCodigoBarra: (
+          codigo: string
+        ) => Promise<{ ok: boolean; producto: Producto | null }>
+        resolverNuevo: (id: number, precio_venta: number, stock: number) => Promise<DefaultResponse>
+        contarNuevos: () => Promise<{ ok: boolean; total: number }>
       }
     }
   }

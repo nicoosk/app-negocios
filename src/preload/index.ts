@@ -100,7 +100,12 @@ const api = {
         unidad
       ),
     eliminar: (id: number) => ipcRenderer.invoke('productos:eliminar', id),
-    buscar: (query: string) => ipcRenderer.invoke('productos:buscar', query)
+    buscar: (query: string) => ipcRenderer.invoke('productos:buscar', query),
+    buscarPorCodigoBarra: (codigo: string) =>
+      ipcRenderer.invoke('productos:buscarPorCodigoBarra', codigo),
+    resolverNuevo: (id: number, precio_venta: number, stock: number) =>
+      ipcRenderer.invoke('productos:resolverNuevo', id, precio_venta, stock),
+    contarNuevos: () => ipcRenderer.invoke('productos:contarNuevos')
   }
 }
 
