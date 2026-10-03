@@ -58,6 +58,9 @@ const api = {
         ipcRenderer.invoke('admin:fiados:eliminar', detalle_id, fiado_id, monto),
       convertir: (detalle_id: number, fiado_id: number, monto: number) =>
         ipcRenderer.invoke('admin:fiados:convertir', detalle_id, fiado_id, monto)
+    },
+    auditoria: {
+      listar: () => ipcRenderer.invoke('auditoria:listar')
     }
   },
   app: {
