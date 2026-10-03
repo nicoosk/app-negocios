@@ -15,8 +15,8 @@ beforeEach(() => {
 })
 
 describe('esquema y migraciones', () => {
-  it('aplica las migraciones hasta user_version 2', () => {
-    expect(db.pragma('user_version', { simple: true })).toBe(2)
+  it('aplica las migraciones hasta user_version 3', () => {
+    expect(db.pragma('user_version', { simple: true })).toBe(3)
   })
 
   it('crea el admin bootstrap con id 1', () => {
@@ -127,5 +127,52 @@ describe('fechas y horas en zona local', () => {
     const filas = nucleo.auditoria.listar()
     expect(filas[0].fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(filas[0].hora).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+  })
+})
+
+describe('códigos de barra', () => {
+  it('escanear un código desconocido crea un producto pendiente, no una fila vacía', () => {
+    const resultado = nucleo.productos.escanear('7801234567890')
+    expect(resultado.nuevo).toBe(true)
+    expect(resultado.producto.codigo_barra).toBe('7801234567890')
+    expect(resultado.producto.es_nuevo).toBe(1)
+    expect(resultado.producto.nombre.trim()).not.toBe('')
+    expect(resultado.producto.precio_venta).toBe(0)
+    expect(nucleo.productos.contarNuevos()).toBe(1)
+  })
+
+  it('escanear dos veces el mismo código no duplica y deja de ser nuevo', () => {
+    const primero = nucleo.productos.escanear('111')
+    const segundo = nucleo.productos.escanear('111')
+    expect(primero.nuevo).toBe(true)
+    expect(segundo.nuevo).toBe(false)
+    expect(segundo.producto.id).toBe(primero.producto.id)
+    expect(nucleo.productos.contarNuevos()).toBe(1)
+  })
+
+  it('resolver un producto nuevo limpia el flag y actualiza sus datos', () => {
+    const { producto } = nucleo.productos.escanear('222')
+    nucleo.productos.resolverNuevo(producto.id, 'Pan integral', 1500, 10, 'unidad')
+    expect(nucleo.productos.buscarPorCodigoBarra('222')).toMatchObject({
+      nombre: 'Pan integral',
+      precio_venta: 1500,
+      stock: 10,
+      es_nuevo: 0
+    })
+    expect(nucleo.productos.contarNuevos()).toBe(0)
+  })
+
+  it('escanear el código de un producto eliminado lo reactiva como pendiente', () => {
+    const id = nucleo.productos.crear('Pan', '333', 1000, 5, 'unidad')
+    nucleo.productos.eliminar(id)
+    const resultado = nucleo.productos.escanear('333')
+    expect(resultado.nuevo).toBe(true)
+    expect(resultado.producto.id).toBe(id)
+    expect(resultado.producto.es_nuevo).toBe(1)
+  })
+
+  it('buscarPorCodigoBarra no matchea contra el nombre', () => {
+    nucleo.productos.crear('12345', null, 1000, 5, 'unidad')
+    expect(nucleo.productos.buscarPorCodigoBarra('12345')).toBeUndefined()
   })
 })
