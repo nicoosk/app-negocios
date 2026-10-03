@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   typecheck:
@@ -30,29 +29,6 @@ jobs:
         run: pnpm install
       - name: Typecheck
         run: pnpm typecheck
-
-  create-pr:
-    needs: [typecheck]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Crear Pull Request hacia main
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: dev
-          destination_branch: main
-          pr_title: '🚀 dev → main'
-          pr_body: |
-            ## Typecheck exitoso ✅
-
-            El código compila sin errores de TypeScript.
-
-            ### Checklist antes de mergear
-            - [ ] Revisé los cambios
-            - [ ] No hay bugs conocidos sin resolver
-          pr_draft: false
 
   sync-dev:
     runs-on: ubuntu-latest
