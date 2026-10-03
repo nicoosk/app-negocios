@@ -458,6 +458,8 @@ export function crearNucleo(db: DatabaseType): Nucleo {
     return Number(res.lastInsertRowid)
   }
 
+  // Editar un producto con precio lo saca del estado "nuevo": el precio es la
+  // señal fiable (el stock por defecto es 0 y 0 es un valor válido).
   function actualizarProducto(
     id: number,
     nombre: string,
@@ -467,8 +469,11 @@ export function crearNucleo(db: DatabaseType): Nucleo {
     unidad: string
   ): void {
     db.prepare(
-      'UPDATE productos SET nombre = ?, codigo_barra = ?, precio_venta = ?, stock = ?, unidad = ? WHERE id = ?'
-    ).run(nombre, codigo_barra, precio_venta, stock, unidad, id)
+      `UPDATE productos
+       SET nombre = ?, codigo_barra = ?, precio_venta = ?, stock = ?, unidad = ?,
+           es_nuevo = CASE WHEN ? > 0 THEN 0 ELSE es_nuevo END
+       WHERE id = ?`
+    ).run(nombre, codigo_barra, precio_venta, stock, unidad, precio_venta, id)
   }
 
   function eliminarProducto(id: number): void {
@@ -478,7 +483,7 @@ export function crearNucleo(db: DatabaseType): Nucleo {
   function buscarProductosPorNombre(query: string): Producto[] {
     return db
       .prepare(
-        'SELECT * FROM productos WHERE activo = 1 AND nombre LIKE ? ORDER BY nombre ASC LIMIT 12'
+        'SELECT * FROM productos WHERE activo = 1 AND es_nuevo = 0 AND nombre LIKE ? ORDER BY nombre ASC LIMIT 12'
       )
       .all(`%${query}%`) as Producto[]
   }
