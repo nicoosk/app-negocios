@@ -1,15 +1,6 @@
-export interface Sesion {
-  id: number
-  username: string
-  is_admin: boolean
-}
+import type { RespuestaError, Sesion } from '../shared/tipos'
 
-export interface RespuestaDenegada {
-  ok: false
-  error: string
-}
-
-export const SIN_AUTORIZACION: RespuestaDenegada = { ok: false, error: 'No autorizado' }
+export const SIN_AUTORIZACION: RespuestaError = { ok: false, error: 'No autorizado' }
 
 let sesion: Sesion | null = null
 
