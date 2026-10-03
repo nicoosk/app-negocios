@@ -24,14 +24,13 @@ interface Fio {
   hora: string
 }
 
-interface DashboardProps {
-  userId: number
+interface PanelVentasProps {
   username: string
 }
 
 // type tabs = 'ventas' | 'fiar'
 
-export default function PanelVentas({ userId, username }: DashboardProps): JSX.Element {
+export default function PanelVentas({ username }: PanelVentasProps): JSX.Element {
   // const [tab, setTab] = useState<tabs>('ventas')
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
@@ -96,11 +95,7 @@ export default function PanelVentas({ userId, username }: DashboardProps): JSX.E
           <button className={styles.badge}>{username}</button>
         </div>
 
-        <TabVentas
-          userId={userId}
-          onVentaRegistrada={recargarVentas}
-          onFioRegistrado={recargarFios}
-        />
+        <TabVentas onVentaRegistrada={recargarVentas} onFioRegistrado={recargarFios} />
       </div>
 
       <div className={styles.right}>
@@ -174,13 +169,7 @@ export default function PanelVentas({ userId, username }: DashboardProps): JSX.E
           )}
         </div>
       </div>
-      {modalDeudores && (
-        <ModalDeudores
-          userId={userId}
-          onClose={() => setModalDeudores(false)}
-          onAbono={() => console.log('Abonado!')}
-        />
-      )}
+      {modalDeudores && <ModalDeudores onClose={() => setModalDeudores(false)} />}
     </div>
   )
 }

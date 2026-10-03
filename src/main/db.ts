@@ -105,12 +105,27 @@ try {
     migrationsCount++
   }
 
+  const usuariosPrueba = db
+    .prepare(`SELECT id FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`)
+    .all() as { id: number }[]
+
+  if (usuariosPrueba.length > 0) {
+    for (const u of usuariosPrueba) {
+      db.prepare('UPDATE fiados_detalle SET id_usuario = 1 WHERE id_usuario = ?').run(u.id)
+    }
+    db.prepare(`DELETE FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`).run()
+    console.log(
+      '[db : migrations] Migración aplicada: usuario de prueba "Prueba" eliminado y sus movimientos reasignados'
+    )
+    migrationsCount++
+  }
+
   console.log(
     `[db : migrations] Fin del proceso. ${migrationsCount === 0 ? 'No se realizaron migraciones.' : `Migraciones realizadas con éxito: ${migrationsCount}.`}`
   )
 } catch (err) {
   console.error(
-    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} con éxito`
+    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} migraciones con éxito`
   )
   console.error(err)
 }
@@ -127,26 +142,22 @@ if (count.c === 0) {
   console.log('Usuario admin creado')
 }
 
-const testUserExists = db
-  .prepare('SELECT COUNT(*) as c FROM usuarios WHERE username = ?')
-  .get('Prueba') as { c: number }
-if (testUserExists.c === 0) {
-  db.prepare('INSERT INTO usuarios (username, pin) VALUES (?, ?)').run('Prueba', '0000')
-}
-
 const productCount = db.prepare('SELECT COUNT(*) as c FROM productos').get() as { c: number }
 console.log('Productos registrados:', productCount.c)
 
-export function findUser(
-  username: string,
-  pin: string
-): { id: number; username: string; creado_en: string; id_admin: boolean } {
-  return db.prepare('SELECT * FROM usuarios WHERE username = ? AND pin = ?').get(username, pin) as {
-    id: number
-    username: string
-    creado_en: string
-    id_admin: boolean
-  }
+export interface UsuarioRow {
+  id: number
+  username: string
+  creado_en: string
+  is_admin: number
+}
+
+export function findUser(username: string, pin: string): UsuarioRow | undefined {
+  return db
+    .prepare(
+      'SELECT id, username, creado_en, is_admin FROM usuarios WHERE username = ? AND pin = ?'
+    )
+    .get(username, pin) as UsuarioRow | undefined
 }
 
 export function createUser(
@@ -154,7 +165,6 @@ export function createUser(
   pin: string,
   is_admin: boolean = false
 ): Database.RunResult {
-  console.log(`Creando usuario: '${username}', pin '${pin}', es admin: ${is_admin}`)
   return db
     .prepare('INSERT INTO usuarios (username, pin, is_admin) VALUES (?, ?, ?)')
     .run(username, pin, is_admin ? 1 : 0)
@@ -178,6 +188,13 @@ export function listUsers(): {
 
 export function deleteUser(id: number): Database.RunResult {
   return db.prepare('DELETE FROM usuarios WHERE id = ?').run(id)
+}
+
+export function contarAdmins(): number {
+  const res = db.prepare('SELECT COUNT(*) as c FROM usuarios WHERE is_admin = 1').get() as {
+    c: number
+  }
+  return res.c
 }
 
 export interface LineaCarrito {
@@ -400,13 +417,6 @@ export function getTodosLosFiados(): { id: number; nombre: string; deuda_total: 
 
 // Administrador de ventas y fíos
 
-export function esAdmin(id_usuario: number): boolean {
-  const user = db.prepare('SELECT is_admin FROM usuarios WHERE id = ?').get(id_usuario) as
-    | { is_admin: number }
-    | undefined
-  return user?.is_admin === 1
-}
-
 export function getVentasAdmin(limit: number = 100): {
   id: number
   monto: number
@@ -493,7 +503,7 @@ export function editarFiadoDetalle(
 
 export function eliminarFiadoDetalle(detalle_id: number, fiado_id: number, monto: number): void {
   db.transaction(() => {
-    db.prepare('DELETE FROM fiados_detalle_item WHERE detalle_id = ?').run(detalle_id)
+    db.prepare('DELETE FROM fiados_detalle_items WHERE detalle_id = ?').run(detalle_id)
     db.prepare('DELETE FROM fiados_detalle WHERE id = ?').run(detalle_id)
     db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total - ?) WHERE id = ?').run(
       monto,

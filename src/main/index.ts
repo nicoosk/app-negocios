@@ -7,6 +7,7 @@ import {
   actualizarProducto,
   buscarFiados,
   buscarProductosPorNombre,
+  contarAdmins,
   convertirFiadoAVenta,
   convertirVentaAFiado,
   crearProducto,
@@ -17,7 +18,6 @@ import {
   eliminarFiadoDetalle,
   eliminarProducto,
   eliminarVenta,
-  esAdmin,
   findUser,
   getFiadosDetalleAdmin,
   getFiadosHoy,
@@ -34,20 +34,35 @@ import {
   registrarFio,
   registrarVenta
 } from './db'
+import {
+  cerrarSesion,
+  esAdminActual,
+  iniciarSesion,
+  sesionActual,
+  SIN_AUTORIZACION
+} from './sesion'
 import { iniciarUpdater, instalarUpdate } from './updater'
 
 ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   try {
     const user = findUser(username, pin)
-    if (user) return { ok: true, user }
-    return { ok: false, error: 'Usuario o PIN incorrecto' }
+    if (!user) return { ok: false, error: 'Usuario o PIN incorrecto' }
+    const sesion = { id: user.id, username: user.username, is_admin: user.is_admin === 1 }
+    iniciarSesion(sesion)
+    return { ok: true, user: sesion }
   } catch (err) {
     console.error('Error en auth:login: ', err)
     return { ok: false, error: 'Error interno' }
   }
 })
 
+ipcMain.handle('auth:logout', () => {
+  cerrarSesion()
+  return { ok: true }
+})
+
 ipcMain.handle('ventas:registrar', (_e, monto: number, lineas: LineaCarrito[]) => {
+  if (!sesionActual()) return SIN_AUTORIZACION
   try {
     registrarVenta(monto, lineas)
     return { ok: true }
@@ -57,44 +72,54 @@ ipcMain.handle('ventas:registrar', (_e, monto: number, lineas: LineaCarrito[]) =
   }
 })
 
-ipcMain.handle('ventas:hoy', () => ({
-  ventas: getVentasHoy(),
-  ...getTotalVentasHoy()
-}))
+ipcMain.handle('ventas:hoy', () => {
+  if (!sesionActual()) return { ventas: [], total: 0, count: 0 }
+  return {
+    ventas: getVentasHoy(),
+    ...getTotalVentasHoy()
+  }
+})
 
 ipcMain.handle('fiados:buscar', () => {
+  if (!sesionActual()) return []
   return buscarFiados()
 })
 
-ipcMain.handle(
-  'fiados:registrar',
-  (_e, nombre: string, monto: number, id_usuario: number, lineas: LineaCarrito[]) => {
-    try {
-      registrarFio(nombre, monto, id_usuario, lineas)
-      return { ok: true }
-    } catch (err) {
-      console.error(err)
-      return { ok: false }
-    }
+ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number, lineas: LineaCarrito[]) => {
+  const usuario = sesionActual()
+  if (!usuario) return SIN_AUTORIZACION
+  try {
+    registrarFio(nombre, monto, usuario.id, lineas)
+    return { ok: true }
+  } catch (err) {
+    console.error(err)
+    return { ok: false }
   }
-)
+})
 
-ipcMain.handle('fiados:hoy', () => ({
-  fios: getFiadosHoy(),
-  ...getTotalFiadosHoy()
-}))
+ipcMain.handle('fiados:hoy', () => {
+  if (!sesionActual()) return { fios: [], total: 0, deudores: 0 }
+  return {
+    fios: getFiadosHoy(),
+    ...getTotalFiadosHoy()
+  }
+})
 
 ipcMain.handle('fiados:total', () => {
+  if (!sesionActual()) return { total: 0 }
   return getTotalFiados()
 })
 
 ipcMain.handle('fiados:todos', () => {
+  if (!sesionActual()) return []
   return getTodosLosFiados()
 })
 
-ipcMain.handle('fiados:abonar', (_e, id: number, monto: number, id_usuario: number) => {
+ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
+  const usuario = sesionActual()
+  if (!usuario) return SIN_AUTORIZACION
   try {
-    abonarFiado(id, monto, id_usuario)
+    abonarFiado(id, monto, usuario.id)
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -103,16 +128,19 @@ ipcMain.handle('fiados:abonar', (_e, id: number, monto: number, id_usuario: numb
 })
 
 ipcMain.handle('fiados:historial', (_e, id: number) => {
+  if (!sesionActual()) return []
   return getHistorialFiado(id)
 })
 
 ipcMain.handle('usuarios:listar', () => {
-  return listUsers()
+  if (!esAdminActual()) return { ...SIN_AUTORIZACION, usuarios: [] }
+  return { ok: true, usuarios: listUsers() }
 })
 
 ipcMain.handle(
   'usuarios:registrar',
   (_e, username: string, pin: string, is_admin: boolean = false) => {
+    if (!esAdminActual()) return SIN_AUTORIZACION
     try {
       createUser(username, pin, is_admin)
       return { ok: true }
@@ -124,6 +152,14 @@ ipcMain.handle(
 )
 
 ipcMain.handle('usuarios:eliminar', (_e, id: number) => {
+  const usuario = sesionActual()
+  if (!usuario || !usuario.is_admin) return SIN_AUTORIZACION
+  if (usuario.id === id) {
+    return { ok: false, error: 'No puedes eliminar tu propio usuario' }
+  }
+  if (contarAdmins() <= 1) {
+    return { ok: false, error: 'Debe quedar al menos un administrador' }
+  }
   try {
     deleteUser(id)
     return { ok: true }
@@ -138,8 +174,8 @@ ipcMain.handle('updater:instalar', () => {
 })
 
 // Admin handlers
-ipcMain.handle('admin:ventas:historial', (_e, id_usuario: number) => {
-  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+ipcMain.handle('admin:ventas:historial', () => {
+  if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     return { ok: true, ventas: getVentasAdmin() }
   } catch (err) {
@@ -148,8 +184,8 @@ ipcMain.handle('admin:ventas:historial', (_e, id_usuario: number) => {
   }
 })
 
-ipcMain.handle('admin:ventas:editar', (_e, id_usuario: number, id_number, monto: number) => {
-  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+ipcMain.handle('admin:ventas:editar', (_e, id_number: number, monto: number) => {
+  if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     editarVenta(id_number, monto)
     return { ok: true }
@@ -159,8 +195,8 @@ ipcMain.handle('admin:ventas:editar', (_e, id_usuario: number, id_number, monto:
   }
 })
 
-ipcMain.handle('admin:ventas:eliminar', (_e, id_usuario: number, id: number) => {
-  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+ipcMain.handle('admin:ventas:eliminar', (_e, id: number) => {
+  if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     eliminarVenta(id)
     return { ok: true }
@@ -170,10 +206,11 @@ ipcMain.handle('admin:ventas:eliminar', (_e, id_usuario: number, id: number) => 
   }
 })
 
-ipcMain.handle('admin:ventas:convertir', (_e, id_usuario: number, id: number, nombre: string) => {
-  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+ipcMain.handle('admin:ventas:convertir', (_e, id: number, nombre: string) => {
+  const usuario = sesionActual()
+  if (!usuario || !usuario.is_admin) return SIN_AUTORIZACION
   try {
-    convertirVentaAFiado(id, nombre, id_usuario)
+    convertirVentaAFiado(id, nombre, usuario.id)
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -181,8 +218,8 @@ ipcMain.handle('admin:ventas:convertir', (_e, id_usuario: number, id: number, no
   }
 })
 
-ipcMain.handle('admin:fiados:historial', (_e, id_usuario: number) => {
-  if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+ipcMain.handle('admin:fiados:historial', () => {
+  if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     return { ok: true, fiados: getFiadosDetalleAdmin() }
   } catch (err) {
@@ -193,15 +230,8 @@ ipcMain.handle('admin:fiados:historial', (_e, id_usuario: number) => {
 
 ipcMain.handle(
   'admin:fiados:editar',
-  (
-    _e,
-    id_usuario: number,
-    detalle_id: number,
-    fiado_id: number,
-    monto_anterior: number,
-    monto_nuevo: number
-  ) => {
-    if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  (_e, detalle_id: number, fiado_id: number, monto_anterior: number, monto_nuevo: number) => {
+    if (!esAdminActual()) return SIN_AUTORIZACION
     try {
       editarFiadoDetalle(detalle_id, fiado_id, monto_anterior, monto_nuevo)
       return { ok: true }
@@ -214,8 +244,8 @@ ipcMain.handle(
 
 ipcMain.handle(
   'admin:fiados:eliminar',
-  (_e, id_usuario: number, detalle_id: number, fiado_id: number, monto: number) => {
-    if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  (_e, detalle_id: number, fiado_id: number, monto: number) => {
+    if (!esAdminActual()) return SIN_AUTORIZACION
     try {
       eliminarFiadoDetalle(detalle_id, fiado_id, monto)
       return { ok: true }
@@ -228,8 +258,8 @@ ipcMain.handle(
 
 ipcMain.handle(
   'admin:fiados:convertir',
-  (_e, id_usuario: number, detalle_id: number, fiado_id: number, monto: number) => {
-    if (!esAdmin(id_usuario)) return { ok: false, error: 'No autorizado' }
+  (_e, detalle_id: number, fiado_id: number, monto: number) => {
+    if (!esAdminActual()) return SIN_AUTORIZACION
     try {
       convertirFiadoAVenta(detalle_id, fiado_id, monto)
       return { ok: true }
@@ -259,6 +289,7 @@ ipcMain.handle('app:version', () => app.getVersion())
 
 // Productos / Inventario
 ipcMain.handle('productos:listar', () => {
+  if (!sesionActual()) return { ok: false, productos: [] }
   try {
     return { ok: true, productos: listarProductos() }
   } catch (err) {
@@ -277,6 +308,7 @@ ipcMain.handle(
     stock: number,
     unidad: string
   ) => {
+    if (!sesionActual()) return SIN_AUTORIZACION
     try {
       crearProducto(nombre, codigo_barra, precio_venta, stock, unidad)
       return { ok: true }
@@ -298,6 +330,7 @@ ipcMain.handle(
     stock: number,
     unidad: string
   ) => {
+    if (!sesionActual()) return SIN_AUTORIZACION
     try {
       actualizarProducto(id, nombre, codigo_barra, precio_venta, stock, unidad)
       return { ok: true }
@@ -309,6 +342,7 @@ ipcMain.handle(
 )
 
 ipcMain.handle('productos:eliminar', (_e, id: number) => {
+  if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     eliminarProducto(id)
     return { ok: true }
@@ -319,6 +353,7 @@ ipcMain.handle('productos:eliminar', (_e, id: number) => {
 })
 
 ipcMain.handle('productos:buscar', (_e, query: string) => {
+  if (!sesionActual()) return { ok: false, productos: [] }
   try {
     return { ok: true, productos: buscarProductosPorNombre(query) }
   } catch (err) {
@@ -338,7 +373,7 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -376,9 +411,6 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
 
   createWindow()
 

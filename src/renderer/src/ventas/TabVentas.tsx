@@ -7,13 +7,11 @@ import CartItem from './ItemCarrito'
 import { similar } from '@renderer/utils/search'
 
 interface TabVentasProps {
-  userId: number
   onVentaRegistrada: () => void
   onFioRegistrado: () => void
 }
 
 export default function TabVentas({
-  userId,
   onVentaRegistrada,
   onFioRegistrado
 }: TabVentasProps): JSX.Element {
@@ -228,7 +226,7 @@ export default function TabVentas({
       cantidad: it.cantidad,
       subtotal: it.subtotal
     }))
-    const result = await window.api.fiados.registrar(seleccionadoFio.nombre, total, userId, lineas)
+    const result = await window.api.fiados.registrar(seleccionadoFio.nombre, total, lineas)
     if (result.ok) {
       setCarrito([])
       setBusqueda('')
