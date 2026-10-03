@@ -1,10 +1,10 @@
 import { contextBridge, ipcRenderer, shell } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
 import { UpdaterPayload, LineaCarrito } from './types'
 
 // Custom APIs for renderer
 const api = {
   login: (username: string, pin: string) => ipcRenderer.invoke('auth:login', username, pin),
+  logout: () => ipcRenderer.invoke('auth:logout'),
   ventas: {
     registrar: (monto: number, lineas: LineaCarrito[]) =>
       ipcRenderer.invoke('ventas:registrar', monto, lineas),
@@ -12,13 +12,12 @@ const api = {
   },
   fiados: {
     buscar: (query: string) => ipcRenderer.invoke('fiados:buscar', query),
-    registrar: (nombre: string, monto: number, id_usuario: number, lineas: LineaCarrito[]) =>
-      ipcRenderer.invoke('fiados:registrar', nombre, monto, id_usuario, lineas),
+    registrar: (nombre: string, monto: number, lineas: LineaCarrito[]) =>
+      ipcRenderer.invoke('fiados:registrar', nombre, monto, lineas),
     hoy: () => ipcRenderer.invoke('fiados:hoy'),
     total: () => ipcRenderer.invoke('fiados:total'),
     todos: () => ipcRenderer.invoke('fiados:todos'),
-    abonar: (id: number, monto: number, id_usuario: number) =>
-      ipcRenderer.invoke('fiados:abonar', id, monto, id_usuario),
+    abonar: (id: number, monto: number) => ipcRenderer.invoke('fiados:abonar', id, monto),
     historial: (id: number) => ipcRenderer.invoke('fiados:historial', id)
   },
   usuarios: {
@@ -39,35 +38,26 @@ const api = {
   },
   admin: {
     ventas: {
-      historial: (id_usuario: number) => ipcRenderer.invoke('admin:ventas:historial', id_usuario),
-      editar: (id_usuario: number, id: number, monto: number) =>
-        ipcRenderer.invoke('admin:ventas:editar', id_usuario, id, monto),
-      eliminar: (id_usuario: number, id: number) =>
-        ipcRenderer.invoke('admin:ventas:eliminar', id_usuario, id),
-      convertir: (id_usuario: number, id: number, nombre: string) =>
-        ipcRenderer.invoke('admin:ventas:convertir', id_usuario, id, nombre)
+      historial: () => ipcRenderer.invoke('admin:ventas:historial'),
+      editar: (id: number, monto: number) => ipcRenderer.invoke('admin:ventas:editar', id, monto),
+      eliminar: (id: number) => ipcRenderer.invoke('admin:ventas:eliminar', id),
+      convertir: (id: number, nombre: string) =>
+        ipcRenderer.invoke('admin:ventas:convertir', id, nombre)
     },
     fiados: {
-      historial: (id_usuario: number) => ipcRenderer.invoke('admin:fiados:historial', id_usuario),
-      editar: (
-        id_usuario: number,
-        detalle_id: number,
-        fiado_id: number,
-        monto_anterior: number,
-        monto_nuevo: number
-      ) =>
+      historial: () => ipcRenderer.invoke('admin:fiados:historial'),
+      editar: (detalle_id: number, fiado_id: number, monto_anterior: number, monto_nuevo: number) =>
         ipcRenderer.invoke(
           'admin:fiados:editar',
-          id_usuario,
           detalle_id,
           fiado_id,
           monto_anterior,
           monto_nuevo
         ),
-      eliminar: (id_usuario: number, detalle_id: number, fiado_id: number, monto: number) =>
-        ipcRenderer.invoke('admin:fiados:eliminar', id_usuario, detalle_id, fiado_id, monto),
-      convertir: (id_usuario: number, detalle_id: number, fiado_id: number, monto: number) =>
-        ipcRenderer.invoke('admin:fiados:convertir', id_usuario, detalle_id, fiado_id, monto)
+      eliminar: (detalle_id: number, fiado_id: number, monto: number) =>
+        ipcRenderer.invoke('admin:fiados:eliminar', detalle_id, fiado_id, monto),
+      convertir: (detalle_id: number, fiado_id: number, monto: number) =>
+        ipcRenderer.invoke('admin:fiados:convertir', detalle_id, fiado_id, monto)
     }
   },
   app: {
@@ -109,14 +99,11 @@ const api = {
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.api = api
 }

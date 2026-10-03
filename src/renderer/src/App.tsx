@@ -1,30 +1,31 @@
 import Login from './login/Login'
 import { useState } from 'react'
 import AppShell from './shell/AppShell'
-import { Usuario } from './usuarios/PanelUsuarios'
+import { Sesion } from './types'
 
 function App(): React.JSX.Element {
-  // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   const [loggedIn, setLoggedIn] = useState<boolean>(false)
-  const [user, setUser] = useState<Usuario>({
+  const [user, setUser] = useState<Sesion>({
     id: 0,
     username: 'Indefinido',
-    creado_en: '0000-00-00',
     is_admin: false
   })
 
-  console.log({ user })
+  const cerrarSesion = (): void => {
+    void window.api.logout()
+    setLoggedIn(false)
+  }
 
   if (!loggedIn)
     return (
       <Login
-        onSuccess={(user: Usuario) => {
+        onSuccess={(user: Sesion) => {
           setUser(user)
           setLoggedIn(true)
         }}
       />
     )
-  return <AppShell user={user} onLogout={() => setLoggedIn(false)} />
+  return <AppShell user={user} onLogout={cerrarSesion} />
 }
 
 export default App

@@ -37,6 +37,11 @@ interface PanelInventarioProps {
   isAdmin: boolean
 }
 
+async function consultarProductos(): Promise<Producto[]> {
+  const res = await window.api.productos.listar()
+  return res.ok && res.productos ? res.productos : []
+}
+
 export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.Element {
   const [productos, setProductos] = useState<Producto[]>([])
   const [busqueda, setBusqueda] = useState('')
@@ -48,16 +53,16 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
   const [error, setError] = useState('')
 
   const cargarProductos = async (): Promise<void> => {
-    const res = await window.api.productos.listar()
-    if (res.ok && res.productos) setProductos(res.productos)
+    setProductos(await consultarProductos())
   }
+
   useEffect(() => {
     const carga = async (): Promise<void> => {
-      cargarProductos()
+      setProductos(await consultarProductos())
     }
 
-    carga()
-  })
+    void carga()
+  }, [])
 
   const abrirCrear = (): void => {
     setEditando(null)

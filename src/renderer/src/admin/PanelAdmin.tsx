@@ -25,10 +25,6 @@ type EstadoEdicion =
   | { tipo: 'venta'; registro: VentaAdmin }
   | { tipo: 'fiado'; registro: FiadoDetalleAdmin }
 
-interface PanelAdminProps {
-  userId: number
-}
-
 const fmt = (n: number): string => n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })
 
 function similar(a: string, b: string): boolean {
@@ -45,7 +41,7 @@ function similar(a: string, b: string): boolean {
   return matches / Math.max(na.length, 1) > 0.55
 }
 
-export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
+export default function PanelAdmin(): JSX.Element {
   const [tab, setTab] = useState<TabActiva>('ventas')
   const [ventas, setVentas] = useState<VentaAdmin[]>([])
   const [fiados, setFiados] = useState<FiadoDetalleAdmin[]>([])
@@ -69,21 +65,20 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   const cargarVentas = useCallback(async (): Promise<void> => {
     setCargando(true)
     setError(null)
-    const res = await window.api.admin.ventas.historial(userId)
-    console.log('[PanelAdmin : CargarVentas] Raw response:', res)
+    const res = await window.api.admin.ventas.historial()
     if (res.ok && res.ventas) setVentas(res.ventas)
     else setError(res.error ?? 'Error al cargar ventas')
     setCargando(false)
-  }, [userId])
+  }, [])
 
   const cargarFiados = useCallback(async (): Promise<void> => {
     setCargando(true)
     setError(null)
-    const res = await window.api.admin.fiados.historial(userId)
+    const res = await window.api.admin.fiados.historial()
     if (res.ok && res.fiados) setFiados(res.fiados)
     else setError(res.error ?? 'Error al cargar fiados')
     setCargando(false)
-  }, [userId])
+  }, [])
 
   const cargarDeudores = useCallback(async (): Promise<void> => {
     const lista = await window.api.fiados.todos()
@@ -117,11 +112,10 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
     const monto = parseInt(montoEdicion)
     if (!monto || monto <= 0) return
     if (edicion.tipo === 'venta') {
-      await window.api.admin.ventas.editar(userId, edicion.registro.id, monto)
+      await window.api.admin.ventas.editar(edicion.registro.id, monto)
       cargarVentas()
     } else if (edicion.tipo === 'fiado') {
       await window.api.admin.fiados.editar(
-        userId,
         edicion.registro.id,
         edicion.registro.fiado_id,
         edicion.registro.monto,
@@ -137,32 +131,25 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
     tipo: TabActiva
   ): Promise<void> => {
     if (tipo === 'ventas') {
-      await window.api.admin.ventas.eliminar(userId, (registro as VentaAdmin).id)
+      await window.api.admin.ventas.eliminar((registro as VentaAdmin).id)
       cargarVentas()
     } else {
       const f = registro as FiadoDetalleAdmin
-      await window.api.admin.fiados.eliminar(userId, f.id, f.fiado_id, f.monto)
+      await window.api.admin.fiados.eliminar(f.id, f.fiado_id, f.monto)
       cargarFiados()
     }
   }
 
   const confirmarConversion = async (): Promise<void> => {
-    console.log(
-      `Se confirmó conversión de ${edicion.tipo} a ${edicion.tipo === 'venta' ? 'fiado' : 'venta'}`
-    )
     if (edicion.tipo === 'venta') {
-      console.log('Entró a venta')
       if (!nombreConversion.trim()) return
-      await window.api.admin.ventas.convertir(userId, edicion.registro.id, nombreConversion.trim())
+      await window.api.admin.ventas.convertir(edicion.registro.id, nombreConversion.trim())
       cargarVentas()
     } else if (edicion.tipo === 'fiado') {
-      console.log('Entró a fiado')
       const f = edicion.registro
-      const result = await window.api.admin.fiados.convertir(userId, f.id, f.fiado_id, f.monto)
-      console.log('Resultado de conversión:', result.ok)
+      await window.api.admin.fiados.convertir(f.id, f.fiado_id, f.monto)
       cargarFiados()
     }
-    console.log('Cerrando modal de edición')
     cerrarEdicion()
   }
 

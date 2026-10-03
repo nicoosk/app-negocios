@@ -4,3 +4,9 @@ export interface UpdaterPayload {
   porcentaje?: number
   releaseUrl?: string
 }
+
+export interface Sesion {
+  id: number
+  username: string
+  is_admin: boolean
+}
