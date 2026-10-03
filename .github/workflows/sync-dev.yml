@@ -1,0 +1,28 @@
+name: Sync dev
+
+# Tras mergear a main, deja dev alineada con main para el próximo ciclo.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: sync-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sincronizar dev con main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout dev
+          git rebase origin/main
+          git push origin dev --force-with-lease

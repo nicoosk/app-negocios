@@ -1,87 +1,22 @@
-name: CI / Release
+name: Release
 
+# Los builds de macOS y Windows se ejecutan solo al crear un tag de release.
 on:
   push:
-    branches:
-      - dev
-      - main
     tags:
       - 'v*'
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  typecheck:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.4.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Instalar dependencias
-        run: pnpm install
-      - name: Typecheck
-        run: pnpm typecheck
-
-  create-pr:
-    needs: [typecheck]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Crear Pull Request hacia main
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: dev
-          destination_branch: main
-          pr_title: '🚀 dev → main'
-          pr_body: |
-            ## Typecheck exitoso ✅
-
-            El código compila sin errores de TypeScript.
-
-            ### Checklist antes de mergear
-            - [ ] Revisé los cambios
-            - [ ] No hay bugs conocidos sin resolver
-          pr_draft: false
-
-  sync-dev:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Sincronizar dev con main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout dev
-          git rebase origin/main
-          git push origin dev --force-with-lease
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Paso 1: crear la release con el template ANTES de que electron-builder publique.
   # Se crea como draft para que no sea visible hasta que los binarios estén listos.
   create-release:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    outputs:
-      upload_url: ${{ steps.crear.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Crear release con template
-        id: crear
         uses: softprops/action-gh-release@v2
         with:
           name: Mi Negocio Digital ${{ github.ref_name }}
