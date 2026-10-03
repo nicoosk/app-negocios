@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './Login.module.css'
 import { JSX } from 'react/jsx-runtime'
-import { Usuario } from '../usuarios/PanelUsuarios'
+import { Sesion } from '@renderer/types'
 import UpdaterBanner from '@renderer/dashboard/UpdateBanner'
 
 interface LoginProps {
-  onSuccess: (user: Usuario) => void
+  onSuccess: (user: Sesion) => void
 }
 
 export default function Login({ onSuccess }: LoginProps): JSX.Element {
@@ -30,14 +30,10 @@ export default function Login({ onSuccess }: LoginProps): JSX.Element {
   }
 
   const handleLogin = async (): Promise<void> => {
-    console.log(`Buscando usuario '${username.trim()}' en bd...`)
     const result = await window.api.login(username.trim(), pin)
-    console.log(`¿Login correcto? ${result.ok}`)
-    console.log(`Usuario: ${result.user}`)
-    if (result.ok) {
+    if (result.ok && result.user) {
       onSuccess(result.user)
     } else {
-      console.error('Error al intentar hacer login')
       setError(result.error ?? 'Error desconocido')
       setPin('')
     }

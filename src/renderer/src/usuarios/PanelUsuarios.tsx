@@ -23,7 +23,7 @@ export default function PanelUsuarios(): JSX.Element {
 
   const cargarUsuarios = async (): Promise<void> => {
     const data = await window.api.usuarios.listar()
-    setUsuarios(data)
+    setUsuarios(data.ok ? data.usuarios : [])
   }
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function PanelUsuarios(): JSX.Element {
     const cargar = async (): Promise<void> => {
       const data = await window.api.usuarios.listar()
       if (isMounted) {
-        setUsuarios(data)
+        setUsuarios(data.ok ? data.usuarios : [])
       }
     }
 
@@ -65,7 +65,7 @@ export default function PanelUsuarios(): JSX.Element {
         setExito('Usuario registrado correctamente.')
         await cargarUsuarios()
       } else {
-        setError('No se puso registrar el usuario.')
+        setError(result.error ?? 'No se pudo registrar el usuario.')
       }
     } finally {
       setCargando(false)
@@ -83,7 +83,7 @@ export default function PanelUsuarios(): JSX.Element {
         setDeleteExito('Usuario eliminado con éxito.')
         await cargarUsuarios()
       } else {
-        setDeleteError('Error al intentar eliminar el usuario.')
+        setDeleteError(result.error ?? 'Error al intentar eliminar el usuario.')
       }
     } finally {
       setCargando(false)

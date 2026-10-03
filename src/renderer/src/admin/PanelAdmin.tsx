@@ -1,13 +1,15 @@
 import { JSX, useCallback, useEffect, useState } from 'react'
 import styles from '@renderer/admin/PanelAdmin.module.css'
 import { Settings } from 'lucide-react'
-type TabActiva = 'ventas' | 'fiados'
+type TabActiva = 'ventas' | 'fiados' | 'auditoria'
+type TipoRegistro = 'ventas' | 'fiados'
 
 interface VentaAdmin {
   id: number
   monto: number
   fecha: string
   hora: string
+  username: string | null
 }
 
 interface FiadoDetalleAdmin {
@@ -20,14 +22,21 @@ interface FiadoDetalleAdmin {
   username: string
 }
 
+interface AuditoriaRegistro {
+  id: number
+  fecha: string
+  hora: string
+  username: string | null
+  accion: string
+  entidad: string | null
+  entidad_id: number | null
+  detalle: string | null
+}
+
 type EstadoEdicion =
   | { tipo: 'ninguno' }
   | { tipo: 'venta'; registro: VentaAdmin }
   | { tipo: 'fiado'; registro: FiadoDetalleAdmin }
-
-interface PanelAdminProps {
-  userId: number
-}
 
 const fmt = (n: number): string => n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })
 
@@ -45,10 +54,11 @@ function similar(a: string, b: string): boolean {
   return matches / Math.max(na.length, 1) > 0.55
 }
 
-export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
+export default function PanelAdmin(): JSX.Element {
   const [tab, setTab] = useState<TabActiva>('ventas')
   const [ventas, setVentas] = useState<VentaAdmin[]>([])
   const [fiados, setFiados] = useState<FiadoDetalleAdmin[]>([])
+  const [auditoria, setAuditoria] = useState<AuditoriaRegistro[]>([])
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [edicion, setEdicion] = useState<EstadoEdicion>({ tipo: 'ninguno' })
@@ -69,36 +79,45 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
   const cargarVentas = useCallback(async (): Promise<void> => {
     setCargando(true)
     setError(null)
-    const res = await window.api.admin.ventas.historial(userId)
-    console.log('[PanelAdmin : CargarVentas] Raw response:', res)
+    const res = await window.api.admin.ventas.historial()
     if (res.ok && res.ventas) setVentas(res.ventas)
     else setError(res.error ?? 'Error al cargar ventas')
     setCargando(false)
-  }, [userId])
+  }, [])
 
   const cargarFiados = useCallback(async (): Promise<void> => {
     setCargando(true)
     setError(null)
-    const res = await window.api.admin.fiados.historial(userId)
+    const res = await window.api.admin.fiados.historial()
     if (res.ok && res.fiados) setFiados(res.fiados)
     else setError(res.error ?? 'Error al cargar fiados')
     setCargando(false)
-  }, [userId])
+  }, [])
 
   const cargarDeudores = useCallback(async (): Promise<void> => {
     const lista = await window.api.fiados.todos()
     setDeudores(lista)
   }, [])
 
+  const cargarAuditoria = useCallback(async (): Promise<void> => {
+    setCargando(true)
+    setError(null)
+    const res = await window.api.admin.auditoria.listar()
+    if (res.ok) setAuditoria(res.registros)
+    else setError(res.error ?? 'Error al cargar la auditoría')
+    setCargando(false)
+  }, [])
+
   useEffect(() => {
     const cargar = async (): Promise<void> => {
       if (tab === 'ventas') cargarVentas()
-      else cargarFiados()
+      else if (tab === 'fiados') cargarFiados()
+      else cargarAuditoria()
     }
     cargar()
-  }, [tab, cargarVentas, cargarFiados])
+  }, [tab, cargarVentas, cargarFiados, cargarAuditoria])
 
-  const abrirEdicion = (registro: VentaAdmin | FiadoDetalleAdmin, tipo: TabActiva): void => {
+  const abrirEdicion = (registro: VentaAdmin | FiadoDetalleAdmin, tipo: TipoRegistro): void => {
     setMontoEdicion(String(registro.monto))
     cambiarNombreConversion('')
     if (tipo === 'ventas') {
@@ -117,11 +136,10 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
     const monto = parseInt(montoEdicion)
     if (!monto || monto <= 0) return
     if (edicion.tipo === 'venta') {
-      await window.api.admin.ventas.editar(userId, edicion.registro.id, monto)
+      await window.api.admin.ventas.editar(edicion.registro.id, monto)
       cargarVentas()
     } else if (edicion.tipo === 'fiado') {
       await window.api.admin.fiados.editar(
-        userId,
         edicion.registro.id,
         edicion.registro.fiado_id,
         edicion.registro.monto,
@@ -134,41 +152,34 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
 
   const eliminar = async (
     registro: VentaAdmin | FiadoDetalleAdmin,
-    tipo: TabActiva
+    tipo: TipoRegistro
   ): Promise<void> => {
     if (tipo === 'ventas') {
-      await window.api.admin.ventas.eliminar(userId, (registro as VentaAdmin).id)
+      await window.api.admin.ventas.eliminar((registro as VentaAdmin).id)
       cargarVentas()
     } else {
       const f = registro as FiadoDetalleAdmin
-      await window.api.admin.fiados.eliminar(userId, f.id, f.fiado_id, f.monto)
+      await window.api.admin.fiados.eliminar(f.id, f.fiado_id, f.monto)
       cargarFiados()
     }
   }
 
   const confirmarConversion = async (): Promise<void> => {
-    console.log(
-      `Se confirmó conversión de ${edicion.tipo} a ${edicion.tipo === 'venta' ? 'fiado' : 'venta'}`
-    )
     if (edicion.tipo === 'venta') {
-      console.log('Entró a venta')
       if (!nombreConversion.trim()) return
-      await window.api.admin.ventas.convertir(userId, edicion.registro.id, nombreConversion.trim())
+      await window.api.admin.ventas.convertir(edicion.registro.id, nombreConversion.trim())
       cargarVentas()
     } else if (edicion.tipo === 'fiado') {
-      console.log('Entró a fiado')
       const f = edicion.registro
-      const result = await window.api.admin.fiados.convertir(userId, f.id, f.fiado_id, f.monto)
-      console.log('Resultado de conversión:', result.ok)
+      await window.api.admin.fiados.convertir(f.id, f.fiado_id, f.monto)
       cargarFiados()
     }
-    console.log('Cerrando modal de edición')
     cerrarEdicion()
   }
 
   const abrirConversion = async (
     registro: VentaAdmin | FiadoDetalleAdmin,
-    tipo: TabActiva
+    tipo: TipoRegistro
   ): Promise<void> => {
     await cargarDeudores()
     setMontoEdicion(String(registro.monto))
@@ -211,11 +222,19 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
           >
             Fiados
           </button>
+          <button
+            className={`${styles.tab} ${tab === 'auditoria' ? styles.tabActivo : ''}`}
+            onClick={() => setTab('auditoria')}
+          >
+            Auditoría
+          </button>
         </div>
         <button
           className={styles.btnRecargar}
           onClick={() => {
-            tab === 'ventas' ? cargarVentas() : cargarFiados()
+            if (tab === 'ventas') cargarVentas()
+            else if (tab === 'fiados') cargarFiados()
+            else cargarAuditoria()
           }}
         >
           Recargar
@@ -225,13 +244,44 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
       {error && <p className={styles.error}>{error}</p>}
       {cargando && <p className={styles.cargando}>Cargando...</p>}
 
-      {!cargando && !error && (
+      {!cargando && !error && tab === 'auditoria' && (
+        <div className={styles.tablaWrapper}>
+          <table className={styles.tabla}>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Entidad</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditoria.map((a) => (
+                <tr key={a.id}>
+                  <td>{a.fecha}</td>
+                  <td>{a.hora}</td>
+                  <td>{a.username ?? '—'}</td>
+                  <td>{a.accion}</td>
+                  <td>{a.entidad ? `${a.entidad} #${a.entidad_id ?? '—'}` : '—'}</td>
+                  <td>{a.detalle ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {auditoria.length === 0 && <p className={styles.empty}>Sin registros de auditoría</p>}
+        </div>
+      )}
+
+      {!cargando && !error && tab !== 'auditoria' && (
         <div className={styles.tablaWrapper}>
           <table className={styles.tabla}>
             <thead>
               <tr>
                 {tab === 'fiados' && <th>Deudor</th>}
                 {tab === 'fiados' && <th>Fiado por</th>}
+                {tab === 'ventas' && <th>Registrada por</th>}
                 <th>{tab === 'fiados' ? 'Monto fiado' : 'Venta registrada'}</th>
                 <th>Fecha</th>
                 <th>Hora</th>
@@ -242,6 +292,7 @@ export default function PanelAdmin({ userId }: PanelAdminProps): JSX.Element {
               {tab === 'ventas' &&
                 ventas.map((v) => (
                   <tr key={v.id}>
+                    <td>{v.username ?? '—'}</td>
                     <td>{fmt(v.monto)}</td>
                     <td>{v.fecha}</td>
                     <td>{v.hora}</td>

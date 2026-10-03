@@ -3,12 +3,13 @@ import PanelVentas from '../ventas/PanelVentas'
 import Dashboard from '../dashboard/Dashboard'
 import styles from './AppShell.module.css'
 import Sidebar, { PaginaActiva } from '../dashboard/Sidebar'
-import PanelUsuarios, { Usuario } from '../usuarios/PanelUsuarios'
+import PanelUsuarios from '../usuarios/PanelUsuarios'
 import PanelAdmin from '@renderer/admin/PanelAdmin'
 import PanelInventario from '@renderer/inventario/PanelInventario'
+import { Sesion } from '@renderer/types'
 
 interface AppShellProps {
-  user: Usuario
+  user: Sesion
   onLogout: () => void
 }
 
@@ -18,17 +19,17 @@ export default function AppShell({ user, onLogout }: AppShellProps): JSX.Element
   const renderContenido = (): JSX.Element => {
     switch (paginaActiva) {
       case 'dashboard':
-        return <Dashboard userId={user.id} />
+        return <Dashboard />
       case 'ventas':
-        return <PanelVentas userId={user.id} username={user.username} />
+        return <PanelVentas username={user.username} />
       case 'usuarios':
         return <PanelUsuarios />
       case 'admin':
-        return <PanelAdmin userId={user.id} />
+        return <PanelAdmin />
       case 'inventario':
         return <PanelInventario isAdmin={user.is_admin} />
       default:
-        return <PanelVentas userId={user.id} username={user.username} />
+        return <PanelVentas username={user.username} />
     }
   }
 
