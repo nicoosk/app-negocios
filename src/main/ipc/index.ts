@@ -361,6 +361,47 @@ export function registrarIpc(nucleo: Nucleo): void {
     }
   })
 
+  ipcMain.handle('productos:escanear', (_e, codigo: string) => {
+    if (!sesionActual()) return SIN_AUTORIZACION
+    const limpio = (codigo ?? '').trim()
+    if (!limpio) return { ok: false, error: 'Código vacío' }
+    try {
+      const resultado = nucleo.productos.escanear(limpio)
+      if (resultado.nuevo) {
+        auditar('producto_pendiente_creado', 'producto', resultado.producto.id, { codigo: limpio })
+      }
+      return { ok: true, ...resultado }
+    } catch (err) {
+      console.error(err)
+      return { ok: false, error: 'Error interno' }
+    }
+  })
+
+  ipcMain.handle('productos:contarNuevos', () => {
+    if (!sesionActual()) return { ok: false, count: 0 }
+    try {
+      return { ok: true, count: nucleo.productos.contarNuevos() }
+    } catch (err) {
+      console.error(err)
+      return { ok: false, count: 0 }
+    }
+  })
+
+  ipcMain.handle(
+    'productos:resolverNuevo',
+    (_e, id: number, nombre: string, precio_venta: number, stock: number, unidad: string) => {
+      if (!sesionActual()) return SIN_AUTORIZACION
+      try {
+        nucleo.productos.resolverNuevo(id, nombre, precio_venta, stock, unidad)
+        auditar('producto_resuelto', 'producto', id, { nombre })
+        return { ok: true }
+      } catch (err) {
+        console.error(err)
+        return { ok: false, error: 'Error interno' }
+      }
+    }
+  )
+
   // ===== App y actualizaciones =====
   ipcMain.handle('app:version', () => app.getVersion())
 
