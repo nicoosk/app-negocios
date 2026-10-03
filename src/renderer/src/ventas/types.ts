@@ -1,9 +1,4 @@
-export interface Producto {
-  id: number
-  nombre: string
-  precio_venta: number
-  stock: number
-}
+export type { Producto } from '@shared/tipos'
 
 export interface ItemCarrito {
   producto_id: number | null

@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { nucleo } from './db'
 import { registrarIpc } from './ipc'
 import { iniciarUpdater } from './updater'
+import { iniciarEscaner, detenerEscaner } from './scanner'
 
 // Los canales IPC se registran al cargar el proceso main, antes de crear ventanas.
 registrarIpc(nucleo)
@@ -57,6 +58,10 @@ app.whenReady().then(() => {
 
   createWindow()
 
+  iniciarEscaner().catch((err) => {
+    console.error('[scanner] No se pudo iniciar el servidor de escaneo:', err)
+  })
+
   app.on('activate', () => {
     // On macOS it's common to re-create a window when the dock icon is clicked
     // and there are no other windows open.
@@ -69,4 +74,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  void detenerEscaner()
 })

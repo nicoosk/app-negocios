@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, shell, type IpcRendererEvent } from 'electron'
 import type {
+  EstadoEscaner,
   FiadoDetalleAdmin,
   FiadoHoy,
   HistorialFiado,
@@ -102,6 +103,12 @@ export interface Api {
       unidad: string
     ) => Promise<RespuestaApi>
   }
+  scanner: {
+    estado: () => Promise<EstadoEscaner>
+    iniciar: () => Promise<EstadoEscaner>
+    detener: () => Promise<EstadoEscaner>
+    onCodigo: (cb: (codigo: string) => void) => () => void
+  }
 }
 
 // Puente seguro: única superficie que el renderer ve como `window.api`.
@@ -187,6 +194,16 @@ const api: Api = {
     contarNuevos: () => ipcRenderer.invoke('productos:contarNuevos'),
     resolverNuevo: (id, nombre, precio_venta, stock, unidad) =>
       ipcRenderer.invoke('productos:resolverNuevo', id, nombre, precio_venta, stock, unidad)
+  },
+  scanner: {
+    estado: () => ipcRenderer.invoke('scanner:estado'),
+    iniciar: () => ipcRenderer.invoke('scanner:iniciar'),
+    detener: () => ipcRenderer.invoke('scanner:detener'),
+    onCodigo: (cb) => {
+      const handler = (_e: IpcRendererEvent, codigo: string): void => cb(codigo)
+      ipcRenderer.on('scanner:codigo', handler)
+      return () => ipcRenderer.removeListener('scanner:codigo', handler)
+    }
   }
 }
 

@@ -11,6 +11,7 @@ import {
 } from '../sesion'
 import { instalarUpdate } from '../updater'
 import { validarProducto } from './validacion'
+import { detenerEscaner, estadoEscaner, iniciarEscaner } from '../scanner'
 
 // Registra todos los canales IPC. La autorización por rol y la auditoría viven
 // acá, en el proceso main: el renderer nunca decide quién es el usuario.
@@ -414,6 +415,11 @@ export function registrarIpc(nucleo: Nucleo): void {
       }
     }
   )
+
+  // ===== Escáner por celular =====
+  ipcMain.handle('scanner:estado', () => estadoEscaner())
+  ipcMain.handle('scanner:iniciar', () => iniciarEscaner())
+  ipcMain.handle('scanner:detener', () => detenerEscaner())
 
   // ===== App y actualizaciones =====
   ipcMain.handle('app:version', () => app.getVersion())
