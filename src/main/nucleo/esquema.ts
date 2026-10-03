@@ -43,6 +43,7 @@ const ESQUEMA = `
     stock         INTEGER NOT NULL DEFAULT 0,
     unidad        TEXT NOT NULL DEFAULT 'unidad',
     activo        INTEGER NOT NULL DEFAULT 1,
+    es_nuevo      INTEGER NOT NULL DEFAULT 0,
     creado_en     TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
 
@@ -130,6 +131,17 @@ function migraciones(db: DatabaseType): Migracion[] {
         if (!columnasVentas.some((c) => c.name === 'id_usuario')) {
           db.exec('ALTER TABLE ventas ADD COLUMN id_usuario INTEGER REFERENCES usuarios(id)')
           console.log("[db : migrations] v2: columna 'id_usuario' agregada a ventas")
+        }
+      }
+    },
+    {
+      version: 3,
+      descripcion: 'Columna productos.es_nuevo para productos pendientes de revisión',
+      up: () => {
+        const columnasProductos = db.pragma('table_info(productos)') as { name: string }[]
+        if (!columnasProductos.some((c) => c.name === 'es_nuevo')) {
+          db.exec('ALTER TABLE productos ADD COLUMN es_nuevo INTEGER NOT NULL DEFAULT 0')
+          console.log("[db : migrations] v3: columna 'es_nuevo' agregada a productos")
         }
       }
     }
