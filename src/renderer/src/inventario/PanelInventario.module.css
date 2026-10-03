@@ -483,3 +483,119 @@
   border: 1px solid #2a2a2a;
   white-space: nowrap;
 }
+
+.pendientesBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.pendientesBadge:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.pendientesBadge:active {
+  transform: scale(0.97);
+}
+
+.togglePendientes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.togglePendientes:hover {
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.toggleActivo {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.btnEscaner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1c1a2e;
+  border: 1px solid #3d3870;
+  color: #a89fff;
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.btnEscaner:hover {
+  background: #252240;
+}
+
+.btnEscaner:active {
+  transform: scale(0.97);
+}
+
+.nombreConTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tagPendiente {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  background: #fbbf24;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.btnCompletar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.btnCompletar:hover {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.btnCompletar:active {
+  transform: scale(0.96);
+}

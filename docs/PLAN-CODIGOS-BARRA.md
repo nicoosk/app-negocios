@@ -96,8 +96,21 @@ Cambios:
   verificar carrito/resolución.
 
 ## Estado
-- [ ] Fase 4.1
-- [ ] Fase 5 backend
-- [ ] Fase 5 UI
-- [ ] Docs
-- [ ] PR final dev → main
+- [x] Fase 4.1 (commit `7750502` en `dev`, incluida en PR #37)
+- [x] Fase 5 backend (`src/main/scanner/`, IPC `scanner:*`, tests `servidor.test.ts`)
+- [x] Fase 5 UI (`escaner/`, integración Ventas/Inventario/Sidebar/AppShell)
+- [x] Docs (`README.md`, `INSTRUCTIONS.md`, este plan)
+- [ ] PR final dev → main (avisar a `nicoosk` para revisar)
+
+### Nota de implementación (cámara en la red local)
+Los navegadores móviles solo exponen `getUserMedia` en contextos seguros: `http://<ip-lan>` **no**
+es seguro, por lo que la cámara en vivo falla en el celular. Para no depender de HTTPS con
+certificado autofirmado, la página móvil ofrece tres caminos: cámara en vivo (si el contexto es
+seguro), **"Tomar foto del código"** (input `capture` + `Html5Qrcode.scanFile`, funciona sobre HTTP)
+y entrada manual. La captura por foto es el camino garantizado.
+
+## Verificación final
+- `pnpm typecheck` ✅
+- `pnpm lint` ✅
+- Tests Electron-as-node: 37/37 ✅ (incluye `servidor.test.ts`)
+- `npx electron-vite build` ✅

@@ -105,6 +105,21 @@
   white-space: nowrap;
 }
 
+.contador {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f59e0b;
+  color: #1a1a1a;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 9px;
+}
+
 .navIcono {
   font-size: 15px;
   line-height: 1;
@@ -145,6 +160,30 @@
 .btnLogout:hover {
   background: #1e1010;
   color: #e06060;
+}
+
+.btnEscaner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #1c1a2e;
+  color: #a89fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
+
+.btnEscaner:hover {
+  background: #252240;
+  color: #c4bcff;
 }
 
 .seccionLabel {

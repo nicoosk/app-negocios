@@ -7,6 +7,7 @@ import PanelUsuarios from '../usuarios/PanelUsuarios'
 import PanelAdmin from '@renderer/admin/PanelAdmin'
 import PanelInventario from '@renderer/inventario/PanelInventario'
 import { Sesion } from '@renderer/types'
+import { EscanerProvider } from '../escaner/EscanerProvider'
 
 interface AppShellProps {
   user: Sesion
@@ -34,15 +35,17 @@ export default function AppShell({ user, onLogout }: AppShellProps): JSX.Element
   }
 
   return (
-    <div className={styles.shell}>
-      <Sidebar
-        paginaActiva={paginaActiva}
-        onNavegar={setPaginaActiva}
-        isAdmin={user.is_admin}
-        onLogout={onLogout}
-      />
+    <EscanerProvider>
+      <div className={styles.shell}>
+        <Sidebar
+          paginaActiva={paginaActiva}
+          onNavegar={setPaginaActiva}
+          isAdmin={user.is_admin}
+          onLogout={onLogout}
+        />
 
-      <main className={styles.contenido}>{renderContenido()}</main>
-    </div>
+        <main className={styles.contenido}>{renderContenido()}</main>
+      </div>
+    </EscanerProvider>
   )
 }
