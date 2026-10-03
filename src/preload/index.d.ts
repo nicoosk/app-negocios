@@ -1,5 +1,3 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
-import { Usuario } from '@renderer/usuarios/PanelUsuarios'
 import { FiadoHoy, LineaCarrito, UpdaterPayload, VentaHoy } from './types'
 
 type DefaultResponse = {
@@ -18,16 +16,29 @@ interface Producto {
   creado_en: string
 }
 
+interface SesionUsuario {
+  id: number
+  username: string
+  is_admin: boolean
+}
+
+interface UsuarioListado {
+  id: number
+  username: string
+  creado_en: string
+  is_admin: boolean
+}
+
 declare global {
   interface Window {
-    electron: ElectronAPI
     api: {
       login: (
         username: string,
         pin: string
-      ) => Promise<{ ok: boolean; user: Usuario; error?: string }>
+      ) => Promise<{ ok: boolean; user?: SesionUsuario; error?: string }>
+      logout: () => Promise<{ ok: boolean }>
       ventas: {
-        registrar: (monto: number, lineas: LineaCarrito[]) => Promise<{ ok: boolean }>
+        registrar: (monto: number, lineas: LineaCarrito[]) => Promise<DefaultResponse>
         hoy: () => Promise<{
           ventas: VentaHoy[]
           total: number
@@ -39,9 +50,8 @@ declare global {
         registrar: (
           nombre: string,
           monto: number,
-          id_usuario: number,
           lineas: LineaCarrito[]
-        ) => Promise<{ ok: boolean }>
+        ) => Promise<DefaultResponse>
         hoy: () => Promise<{
           fios: FiadoHoy[]
           total: number
@@ -49,19 +59,13 @@ declare global {
         }>
         total: () => Promise<{ total: number }>
         todos: () => Promise<{ id: number; nombre: string; deuda_total: number }[]>
-        abonar: (id: number, monto: number, id_usuario: number) => Promise<{ ok: boolean }>
+        abonar: (id: number, monto: number) => Promise<DefaultResponse>
         historial: (id: number) => Promise<{ monto: number; fecha: string; hora: string }[]>
       }
       usuarios: {
-        listar: () => Promise<
-          { id: number; username: string; creado_en: string; is_admin: boolean }[]
-        >
-        registrar: (
-          username: string,
-          pin: string,
-          is_admin: boolean = false
-        ) => Promise<{ ok: boolean }>
-        eliminar: (id: number) => Promise<{ ok: boolean }>
+        listar: () => Promise<{ ok: boolean; usuarios: UsuarioListado[]; error?: string }>
+        registrar: (username: string, pin: string, is_admin?: boolean) => Promise<DefaultResponse>
+        eliminar: (id: number) => Promise<DefaultResponse>
       }
       updater: {
         onEstado: (cb: (payload: UpdaterPayload) => void) => void
@@ -71,18 +75,24 @@ declare global {
       }
       admin: {
         ventas: {
-          historial: (id_usuario: number) => Promise<{
+          historial: () => Promise<{
             ok: boolean
-            ventas?: { id: number; monto: number; fecha: string; hora: string }[]
+            ventas?: {
+              id: number
+              monto: number
+              fecha: string
+              hora: string
+              username: string | null
+            }[]
             error?: string
           }>
-          editar: (id_usuario: number, id: number, monto: number) => Promise<DefaultResponse>
-          eliminar: (id_usuario: number, id: number) => Promise<DefaultResponse>
-          convertir: (id_usuario: number, id: number, nombre: string) => Promise<DefaultResponse>
+          editar: (id: number, monto: number) => Promise<DefaultResponse>
+          eliminar: (id: number) => Promise<DefaultResponse>
+          convertir: (id: number, nombre: string) => Promise<DefaultResponse>
         }
         fiados: {
-          historial: (id_usuario: number) => Promise<{
-            ok: boolea
+          historial: () => Promise<{
+            ok: boolean
             fiados?: {
               id: number
               fiado_id: number
@@ -95,24 +105,37 @@ declare global {
             error?: string
           }>
           editar: (
-            id_usuario: number,
             detalle_id: number,
             fiado_id: number,
             monto_anterior: number,
             monto_nuevo: number
           ) => Promise<DefaultResponse>
           eliminar: (
-            id_usuario: number,
             detalle_id: number,
             fiado_id: number,
             monto: number
           ) => Promise<DefaultResponse>
           convertir: (
-            id_usuario: number,
             detalle_id: number,
             fiado_id: number,
             monto: number
           ) => Promise<DefaultResponse>
+        }
+        auditoria: {
+          listar: () => Promise<{
+            ok: boolean
+            registros: {
+              id: number
+              fecha: string
+              hora: string
+              username: string | null
+              accion: string
+              entidad: string | null
+              entidad_id: number | null
+              detalle: string | null
+            }[]
+            error?: string
+          }>
         }
       }
       app: {

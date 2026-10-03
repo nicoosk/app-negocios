@@ -15,9 +15,8 @@ interface Movimiento {
 }
 
 interface ModalDeudoresProps {
-  userId: number
   onClose: () => void
-  onAbono: () => void
+  onAbono?: () => void
 }
 
 const fmt = (n: number): string => '$' + Math.abs(n).toLocaleString('es-CL')
@@ -32,11 +31,7 @@ function calcularSaldos(historial: Movimiento[]): number[] {
   return saldos.reverse()
 }
 
-export default function ModalDeudores({
-  userId,
-  onClose,
-  onAbono
-}: ModalDeudoresProps): JSX.Element {
+export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps): JSX.Element {
   const [deudores, setDeudores] = useState<Deudor[]>([])
   const [expandido, setExpandido] = useState<number | null>(null)
   const [abono, setAbono] = useState('')
@@ -65,7 +60,7 @@ export default function ModalDeudores({
     if (!monto || monto <= 0) return
     setCargando(true)
     try {
-      const result = await window.api.fiados.abonar(deudor.id, monto, userId)
+      const result = await window.api.fiados.abonar(deudor.id, monto)
       if (result.ok) {
         const [actualizados, data] = await Promise.all([
           window.api.fiados.todos(),
@@ -74,7 +69,7 @@ export default function ModalDeudores({
         setDeudores(actualizados)
         setHistorial(data)
         setAbono('')
-        onAbono()
+        onAbono?.()
       }
     } finally {
       setCargando(false)
