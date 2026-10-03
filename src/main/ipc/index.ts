@@ -10,6 +10,7 @@ import {
   SIN_AUTORIZACION
 } from '../sesion'
 import { instalarUpdate } from '../updater'
+import { validarProducto } from './validacion'
 
 // Registra todos los canales IPC. La autorización por rol y la auditoría viven
 // acá, en el proceso main: el renderer nunca decide quién es el usuario.
@@ -305,6 +306,8 @@ export function registrarIpc(nucleo: Nucleo): void {
       unidad: string
     ) => {
       if (!sesionActual()) return SIN_AUTORIZACION
+      const error = validarProducto({ nombre, precio_venta, stock, unidad })
+      if (error) return { ok: false, error }
       try {
         const id = nucleo.productos.crear(nombre, codigo_barra, precio_venta, stock, unidad)
         auditar('producto_creado', 'producto', id, { nombre })
@@ -328,6 +331,8 @@ export function registrarIpc(nucleo: Nucleo): void {
       unidad: string
     ) => {
       if (!sesionActual()) return SIN_AUTORIZACION
+      const error = validarProducto({ nombre, precio_venta, stock, unidad })
+      if (error) return { ok: false, error }
       try {
         nucleo.productos.actualizar(id, nombre, codigo_barra, precio_venta, stock, unidad)
         auditar('producto_actualizado', 'producto', id, { nombre })
@@ -391,6 +396,14 @@ export function registrarIpc(nucleo: Nucleo): void {
     'productos:resolverNuevo',
     (_e, id: number, nombre: string, precio_venta: number, stock: number, unidad: string) => {
       if (!sesionActual()) return SIN_AUTORIZACION
+      const error = validarProducto({
+        nombre,
+        precio_venta,
+        stock,
+        unidad,
+        exigirPrecioPositivo: true
+      })
+      if (error) return { ok: false, error }
       try {
         nucleo.productos.resolverNuevo(id, nombre, precio_venta, stock, unidad)
         auditar('producto_resuelto', 'producto', id, { nombre })

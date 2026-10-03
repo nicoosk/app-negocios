@@ -2,6 +2,7 @@ import { JSX, useEffect, useState } from 'react'
 import styles from './PanelInventario.module.css'
 import { Package, Pencil, Plus, Search, Trash2, TriangleAlert } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
+import { UNIDADES } from '@shared/constantes'
 
 interface Producto {
   id: number
@@ -22,7 +23,6 @@ interface FormState {
   unidad: string
 }
 
-const UNIDADES = ['unidad', 'gr', 'kg', 'ml', 'litro', 'docena']
 const UMBRAL_STOCK_BAJO = 5
 
 const formVacio = (): FormState => ({
@@ -30,7 +30,7 @@ const formVacio = (): FormState => ({
   codigo_barra: '',
   precio_venta: '',
   stock: '',
-  unidad: ''
+  unidad: 'unidad'
 })
 
 interface PanelInventarioProps {
