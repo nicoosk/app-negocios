@@ -87,6 +87,20 @@ export interface Api {
     ) => Promise<RespuestaApi>
     eliminar: (id: number) => Promise<RespuestaApi>
     buscar: (query: string) => Promise<{ ok: boolean; productos: Producto[] }>
+    escanear: (codigo: string) => Promise<{
+      ok: boolean
+      producto?: Producto
+      nuevo?: boolean
+      error?: string
+    }>
+    contarNuevos: () => Promise<{ ok: boolean; count: number }>
+    resolverNuevo: (
+      id: number,
+      nombre: string,
+      precio_venta: number,
+      stock: number,
+      unidad: string
+    ) => Promise<RespuestaApi>
   }
 }
 
@@ -168,7 +182,11 @@ const api: Api = {
         unidad
       ),
     eliminar: (id) => ipcRenderer.invoke('productos:eliminar', id),
-    buscar: (query) => ipcRenderer.invoke('productos:buscar', query)
+    buscar: (query) => ipcRenderer.invoke('productos:buscar', query),
+    escanear: (codigo) => ipcRenderer.invoke('productos:escanear', codigo),
+    contarNuevos: () => ipcRenderer.invoke('productos:contarNuevos'),
+    resolverNuevo: (id, nombre, precio_venta, stock, unidad) =>
+      ipcRenderer.invoke('productos:resolverNuevo', id, nombre, precio_venta, stock, unidad)
   }
 }
 

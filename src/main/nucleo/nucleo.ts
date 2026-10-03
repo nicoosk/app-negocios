@@ -8,6 +8,7 @@ import type {
   LineaCarrito,
   Producto,
   RegistroAuditoria,
+  ResultadoEscaneo,
   ResumenFiado,
   Usuario,
   UsuarioRow,
@@ -83,6 +84,16 @@ export interface Nucleo {
     ) => void
     eliminar: (id: number) => void
     buscarPorNombre: (query: string) => Producto[]
+    buscarPorCodigoBarra: (codigo: string) => Producto | undefined
+    escanear: (codigo: string) => ResultadoEscaneo
+    contarNuevos: () => number
+    resolverNuevo: (
+      id: number,
+      nombre: string,
+      precio_venta: number,
+      stock: number,
+      unidad: string
+    ) => void
   }
   auditoria: {
     registrar: (entrada: EntradaAuditoria) => void
@@ -472,6 +483,49 @@ export function crearNucleo(db: DatabaseType): Nucleo {
       .all(`%${query}%`) as Producto[]
   }
 
+  function buscarProductoPorCodigoBarra(codigo: string): Producto | undefined {
+    return db
+      .prepare('SELECT * FROM productos WHERE codigo_barra = ? AND activo = 1')
+      .get(codigo) as Producto | undefined
+  }
+
+  // Al escanear un código desconocido se crea un producto pendiente marcado con
+  // `es_nuevo = 1`, nunca una fila vacía: el nombre provisional deriva del código.
+  // El upsert reactiva el código si pertenecía a un producto eliminado.
+  function crearProductoPendiente(codigo: string): Producto {
+    db.prepare(
+      `INSERT INTO productos (nombre, codigo_barra, es_nuevo)
+       VALUES (?, ?, 1)
+       ON CONFLICT(codigo_barra) DO UPDATE SET activo = 1, es_nuevo = 1`
+    ).run(`Producto ${codigo}`, codigo)
+    return buscarProductoPorCodigoBarra(codigo) as Producto
+  }
+
+  function escanearCodigo(codigo: string): ResultadoEscaneo {
+    const existente = buscarProductoPorCodigoBarra(codigo)
+    if (existente) return { producto: existente, nuevo: false }
+    return { producto: crearProductoPendiente(codigo), nuevo: true }
+  }
+
+  function contarProductosNuevos(): number {
+    const res = db
+      .prepare('SELECT COUNT(*) as c FROM productos WHERE activo = 1 AND es_nuevo = 1')
+      .get() as { c: number }
+    return res.c
+  }
+
+  function resolverProductoNuevo(
+    id: number,
+    nombre: string,
+    precio_venta: number,
+    stock: number,
+    unidad: string
+  ): void {
+    db.prepare(
+      'UPDATE productos SET nombre = ?, precio_venta = ?, stock = ?, unidad = ?, es_nuevo = 0 WHERE id = ?'
+    ).run(nombre, precio_venta, stock, unidad, id)
+  }
+
   // ===== Auditoría =====
   function registrarAuditoria(entrada: EntradaAuditoria): void {
     const { fecha, hora } = ahoraLocal()
@@ -538,7 +592,11 @@ export function crearNucleo(db: DatabaseType): Nucleo {
       crear: crearProducto,
       actualizar: actualizarProducto,
       eliminar: eliminarProducto,
-      buscarPorNombre: buscarProductosPorNombre
+      buscarPorNombre: buscarProductosPorNombre,
+      buscarPorCodigoBarra: buscarProductoPorCodigoBarra,
+      escanear: escanearCodigo,
+      contarNuevos: contarProductosNuevos,
+      resolverNuevo: resolverProductoNuevo
     },
     auditoria: {
       registrar: registrarAuditoria,

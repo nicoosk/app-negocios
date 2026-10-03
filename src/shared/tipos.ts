@@ -29,7 +29,13 @@ export interface Producto {
   stock: number
   unidad: string
   activo: number
+  es_nuevo: number
   creado_en: string
+}
+
+export interface ResultadoEscaneo {
+  producto: Producto
+  nuevo: boolean
 }
 
 export interface LineaCarrito {
