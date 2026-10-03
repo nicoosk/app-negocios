@@ -19,6 +19,7 @@ import {
   eliminarProducto,
   eliminarVenta,
   findUser,
+  getAuditoria,
   getFiadosDetalleAdmin,
   getFiadosHoy,
   getHistorialFiado,
@@ -31,8 +32,10 @@ import {
   LineaCarrito,
   listarProductos,
   listUsers,
+  registrarAuditoria,
   registrarFio,
-  registrarVenta
+  registrarVenta,
+  usuarioTieneActividad
 } from './db'
 import {
   cerrarSesion,
@@ -43,12 +46,44 @@ import {
 } from './sesion'
 import { iniciarUpdater, instalarUpdate } from './updater'
 
+function auditar(
+  accion: string,
+  entidad: string,
+  entidadId: number | null,
+  detalle?: unknown
+): void {
+  try {
+    const usuario = sesionActual()
+    registrarAuditoria({
+      id_usuario: usuario?.id ?? null,
+      username: usuario?.username ?? null,
+      accion,
+      entidad,
+      entidad_id: entidadId,
+      detalle: detalle === undefined ? null : JSON.stringify(detalle)
+    })
+  } catch (err) {
+    console.error('[auditoria] No se pudo registrar la acción:', err)
+  }
+}
+
 ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
   try {
     const user = findUser(username, pin)
-    if (!user) return { ok: false, error: 'Usuario o PIN incorrecto' }
+    if (!user) {
+      registrarAuditoria({
+        id_usuario: null,
+        username: username,
+        accion: 'login_fallido',
+        entidad: 'usuario',
+        entidad_id: null,
+        detalle: null
+      })
+      return { ok: false, error: 'Usuario o PIN incorrecto' }
+    }
     const sesion = { id: user.id, username: user.username, is_admin: user.is_admin === 1 }
     iniciarSesion(sesion)
+    auditar('login', 'usuario', user.id)
     return { ok: true, user: sesion }
   } catch (err) {
     console.error('Error en auth:login: ', err)
@@ -57,14 +92,21 @@ ipcMain.handle('auth:login', async (_event, username: string, pin: string) => {
 })
 
 ipcMain.handle('auth:logout', () => {
+  const usuario = sesionActual()
+  if (usuario) auditar('logout', 'usuario', usuario.id)
   cerrarSesion()
   return { ok: true }
 })
 
 ipcMain.handle('ventas:registrar', (_e, monto: number, lineas: LineaCarrito[]) => {
-  if (!sesionActual()) return SIN_AUTORIZACION
+  const usuario = sesionActual()
+  if (!usuario) return SIN_AUTORIZACION
   try {
-    registrarVenta(monto, lineas)
+    const res = registrarVenta(monto, lineas, usuario.id)
+    auditar('venta_registrada', 'venta', Number(res.lastInsertRowid), {
+      monto,
+      items: lineas.length
+    })
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -89,7 +131,8 @@ ipcMain.handle('fiados:registrar', (_e, nombre: string, monto: number, lineas: L
   const usuario = sesionActual()
   if (!usuario) return SIN_AUTORIZACION
   try {
-    registrarFio(nombre, monto, usuario.id, lineas)
+    const res = registrarFio(nombre, monto, usuario.id, lineas)
+    auditar('fiado_registrado', 'fiado_detalle', Number(res.lastInsertRowid), { nombre, monto })
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -120,6 +163,7 @@ ipcMain.handle('fiados:abonar', (_e, id: number, monto: number) => {
   if (!usuario) return SIN_AUTORIZACION
   try {
     abonarFiado(id, monto, usuario.id)
+    auditar('abono_registrado', 'fiado', id, { monto })
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -142,7 +186,8 @@ ipcMain.handle(
   (_e, username: string, pin: string, is_admin: boolean = false) => {
     if (!esAdminActual()) return SIN_AUTORIZACION
     try {
-      createUser(username, pin, is_admin)
+      const res = createUser(username, pin, is_admin)
+      auditar('usuario_creado', 'usuario', Number(res.lastInsertRowid), { username, is_admin })
       return { ok: true }
     } catch (err) {
       console.error(err)
@@ -160,12 +205,29 @@ ipcMain.handle('usuarios:eliminar', (_e, id: number) => {
   if (contarAdmins() <= 1) {
     return { ok: false, error: 'Debe quedar al menos un administrador' }
   }
+  if (usuarioTieneActividad(id)) {
+    return {
+      ok: false,
+      error: 'El usuario tiene ventas o fíos registrados; no se puede eliminar'
+    }
+  }
   try {
     deleteUser(id)
+    auditar('usuario_eliminado', 'usuario', id)
     return { ok: true }
   } catch (err) {
     console.error(err)
-    return { ok: false }
+    return { ok: false, error: 'No se pudo eliminar el usuario' }
+  }
+})
+
+ipcMain.handle('auditoria:listar', () => {
+  if (!esAdminActual()) return { ...SIN_AUTORIZACION, registros: [] }
+  try {
+    return { ok: true, registros: getAuditoria() }
+  } catch (err) {
+    console.error(err)
+    return { ok: false, registros: [], error: 'Error interno' }
   }
 })
 
@@ -188,6 +250,7 @@ ipcMain.handle('admin:ventas:editar', (_e, id_number: number, monto: number) => 
   if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     editarVenta(id_number, monto)
+    auditar('venta_editada', 'venta', id_number, { monto })
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -199,6 +262,7 @@ ipcMain.handle('admin:ventas:eliminar', (_e, id: number) => {
   if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     eliminarVenta(id)
+    auditar('venta_eliminada', 'venta', id)
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -211,6 +275,7 @@ ipcMain.handle('admin:ventas:convertir', (_e, id: number, nombre: string) => {
   if (!usuario || !usuario.is_admin) return SIN_AUTORIZACION
   try {
     convertirVentaAFiado(id, nombre, usuario.id)
+    auditar('venta_convertida_a_fiado', 'venta', id, { nombre })
     return { ok: true }
   } catch (err) {
     console.error(err)
@@ -234,6 +299,7 @@ ipcMain.handle(
     if (!esAdminActual()) return SIN_AUTORIZACION
     try {
       editarFiadoDetalle(detalle_id, fiado_id, monto_anterior, monto_nuevo)
+      auditar('fiado_editado', 'fiado_detalle', detalle_id, { monto_anterior, monto_nuevo })
       return { ok: true }
     } catch (err) {
       console.error(err)
@@ -248,6 +314,7 @@ ipcMain.handle(
     if (!esAdminActual()) return SIN_AUTORIZACION
     try {
       eliminarFiadoDetalle(detalle_id, fiado_id, monto)
+      auditar('fiado_eliminado', 'fiado_detalle', detalle_id, { monto })
       return { ok: true }
     } catch (err) {
       console.error(err)
@@ -259,9 +326,11 @@ ipcMain.handle(
 ipcMain.handle(
   'admin:fiados:convertir',
   (_e, detalle_id: number, fiado_id: number, monto: number) => {
-    if (!esAdminActual()) return SIN_AUTORIZACION
+    const usuario = sesionActual()
+    if (!usuario || !usuario.is_admin) return SIN_AUTORIZACION
     try {
-      convertirFiadoAVenta(detalle_id, fiado_id, monto)
+      convertirFiadoAVenta(detalle_id, fiado_id, monto, usuario.id)
+      auditar('fiado_convertido_a_venta', 'fiado_detalle', detalle_id, { monto })
       return { ok: true }
     } catch (err) {
       console.error(err)
@@ -310,7 +379,8 @@ ipcMain.handle(
   ) => {
     if (!sesionActual()) return SIN_AUTORIZACION
     try {
-      crearProducto(nombre, codigo_barra, precio_venta, stock, unidad)
+      const res = crearProducto(nombre, codigo_barra, precio_venta, stock, unidad)
+      auditar('producto_creado', 'producto', Number(res.lastInsertRowid), { nombre })
       return { ok: true }
     } catch (err) {
       console.error(err)
@@ -333,6 +403,7 @@ ipcMain.handle(
     if (!sesionActual()) return SIN_AUTORIZACION
     try {
       actualizarProducto(id, nombre, codigo_barra, precio_venta, stock, unidad)
+      auditar('producto_actualizado', 'producto', id, { nombre })
       return { ok: true }
     } catch (err) {
       console.error(err)
@@ -345,6 +416,7 @@ ipcMain.handle('productos:eliminar', (_e, id: number) => {
   if (!esAdminActual()) return SIN_AUTORIZACION
   try {
     eliminarProducto(id)
+    auditar('producto_eliminado', 'producto', id)
     return { ok: true }
   } catch (err) {
     console.error(err)

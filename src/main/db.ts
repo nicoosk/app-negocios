@@ -5,35 +5,56 @@ import { app } from 'electron'
 const dbPath = path.join(app.getPath('userData'), 'negocio.db')
 const db: DatabaseType = new Database(dbPath)
 
+db.pragma('foreign_keys = ON')
+
+// Fecha y hora en la zona horaria local del equipo (no UTC) para que "hoy" coincida
+// con el día real del negocio. Se usan valores explícitos en los INSERT para que
+// también apliquen a bases de datos existentes cuyos DEFAULT originales eran UTC.
+export function ahoraLocal(): { fecha: string; hora: string } {
+  const ahora = new Date()
+  const fecha = [
+    ahora.getFullYear(),
+    String(ahora.getMonth() + 1).padStart(2, '0'),
+    String(ahora.getDate()).padStart(2, '0')
+  ].join('-')
+  const hora = [
+    String(ahora.getHours()).padStart(2, '0'),
+    String(ahora.getMinutes()).padStart(2, '0'),
+    String(ahora.getSeconds()).padStart(2, '0')
+  ].join(':')
+  return { fecha, hora }
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS usuarios (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT UNIQUE NOT NULL,
     pin           TEXT NOT NULL,
-    creado_en     TEXT DEFAULT (datetime('now')),
+    creado_en     TEXT DEFAULT (datetime('now', 'localtime')),
     is_admin      INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS ventas (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     monto         INTEGER NOT NULL,
-    fecha         TEXT DEFAULT (date('now')),
-    hora          TEXT DEFAULT (time('now'))
+    id_usuario    INTEGER REFERENCES usuarios(id),
+    fecha         TEXT DEFAULT (date('now', 'localtime')),
+    hora          TEXT DEFAULT (time('now', 'localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS fiados (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre        TEXT UNIQUE NOT NULL,
     deuda_total   INTEGER DEFAULT 0,
-    creado_en     TEXT DEFAULT (datetime('now'))
+    creado_en     TEXT DEFAULT (datetime('now', 'localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS fiados_detalle (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     fiado_id      INTEGER NOT NULL,
     monto         INTEGER NOT NULL,
-    fecha         TEXT DEFAULT (date('now')),
-    hora          TEXT DEFAULT (time('now')),
+    fecha         TEXT DEFAULT (date('now', 'localtime')),
+    hora          TEXT DEFAULT (time('now', 'localtime')),
     id_usuario    INTEGER NOT NULL,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
     FOREIGN KEY (fiado_id) REFERENCES fiados(id)
@@ -47,7 +68,7 @@ db.exec(`
     stock         INTEGER NOT NULL DEFAULT 0,
     unidad        TEXT NOT NULL DEFAULT 'unidad',
     activo        INTEGER NOT NULL DEFAULT 1,
-    creado_en     TEXT NOT NULL DEFAULT (datetime('now'))
+    creado_en     TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS ventas_detalle (
@@ -69,68 +90,21 @@ db.exec(`
     cantidad            INTEGER NOT NULL DEFAULT 1,
     subtotal            INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS auditoria (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha         TEXT NOT NULL DEFAULT (date('now', 'localtime')),
+    hora          TEXT NOT NULL DEFAULT (time('now', 'localtime')),
+    id_usuario    INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    username      TEXT,
+    accion        TEXT NOT NULL,
+    entidad       TEXT,
+    entidad_id    INTEGER,
+    detalle       TEXT
+  );
 `)
 
-// START: Bloque de migraciones
-let migrationsCount: number = 0
-try {
-  console.log('[db : migrations] Iniciando migraciones pendientes')
-  const columnasUsuarios = db.pragma('table_info(usuarios)') as { name: string }[]
-  const tieneIsAdmin = columnasUsuarios.some((c) => c.name === 'is_admin')
-
-  if (!tieneIsAdmin) {
-    console.log(
-      '[db : migrations] No se encontró la columna is_admin para la tabla usuarios. Agregando...'
-    )
-    db.exec(`ALTER TABLE usuarios ADD COLUMN is_admin INTEGER DEFAULT 0`)
-    db.prepare(`UPDATE usuarios SET is_admin = 1 WHERE username = 'admin'`).run()
-    console.log(
-      `[db : migrations] Migración aplicada: Columna is_admin agregada y usuario 'admin' es un admin por defecto. Procura cambiar esto a la brevedad`
-    )
-    migrationsCount++
-  }
-  const columnasFiadosDetalle = db.pragma('table_info(fiados_detalle)') as { name: string }[]
-  const idUsuarioPresenteEnFiadosDetalle = columnasFiadosDetalle.some(
-    (c) => c.name === 'id_usuario'
-  )
-
-  if (!idUsuarioPresenteEnFiadosDetalle) {
-    console.log(
-      `[db : migrations] No se encontró la columna id_usuario para la tabla fiados_detalle. Agregando...`
-    )
-    db.exec('ALTER TABLE fiados_detalle ADD COLUMN id_usuario INTEGER NOT NULL DEFAULT 1')
-    console.log(
-      '[db : migrations] Migración aplicada: Columna id_usuario agregada. Registros existentes adoptan id_usuario = 1'
-    )
-    migrationsCount++
-  }
-
-  const usuariosPrueba = db
-    .prepare(`SELECT id FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`)
-    .all() as { id: number }[]
-
-  if (usuariosPrueba.length > 0) {
-    for (const u of usuariosPrueba) {
-      db.prepare('UPDATE fiados_detalle SET id_usuario = 1 WHERE id_usuario = ?').run(u.id)
-    }
-    db.prepare(`DELETE FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`).run()
-    console.log(
-      '[db : migrations] Migración aplicada: usuario de prueba "Prueba" eliminado y sus movimientos reasignados'
-    )
-    migrationsCount++
-  }
-
-  console.log(
-    `[db : migrations] Fin del proceso. ${migrationsCount === 0 ? 'No se realizaron migraciones.' : `Migraciones realizadas con éxito: ${migrationsCount}.`}`
-  )
-} catch (err) {
-  console.error(
-    `Ocurrió un error al realizar las migraciones. Se lograron realizar ${migrationsCount} migraciones con éxito`
-  )
-  console.error(err)
-}
-// END: Bloque de migraciones
-
+// Bootstrap del administrador antes de las migraciones para garantizar que exista el usuario id = 1
 const count = db.prepare('SELECT COUNT(*) as c FROM usuarios').get() as { c: number }
 console.log('Usuarios en DB:', count.c)
 if (count.c === 0) {
@@ -141,6 +115,87 @@ if (count.c === 0) {
   )
   console.log('Usuario admin creado')
 }
+
+// START: Migraciones versionadas (PRAGMA user_version)
+interface Migracion {
+  version: number
+  descripcion: string
+  up: () => void
+}
+
+const migraciones: Migracion[] = [
+  {
+    version: 1,
+    descripcion:
+      'Base histórica: is_admin, fiados_detalle.id_usuario y limpieza del usuario Prueba',
+    up: () => {
+      const columnasUsuarios = db.pragma('table_info(usuarios)') as { name: string }[]
+      if (!columnasUsuarios.some((c) => c.name === 'is_admin')) {
+        db.exec('ALTER TABLE usuarios ADD COLUMN is_admin INTEGER DEFAULT 0')
+        db.prepare(`UPDATE usuarios SET is_admin = 1 WHERE username = 'admin'`).run()
+        console.log("[db : migrations] v1: columna 'is_admin' agregada a usuarios")
+      }
+
+      const columnasFiadosDetalle = db.pragma('table_info(fiados_detalle)') as { name: string }[]
+      if (!columnasFiadosDetalle.some((c) => c.name === 'id_usuario')) {
+        db.exec('ALTER TABLE fiados_detalle ADD COLUMN id_usuario INTEGER NOT NULL DEFAULT 1')
+        console.log("[db : migrations] v1: columna 'id_usuario' agregada a fiados_detalle")
+      }
+
+      const usuariosPrueba = db
+        .prepare(`SELECT id FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`)
+        .all() as { id: number }[]
+
+      if (usuariosPrueba.length > 0) {
+        for (const u of usuariosPrueba) {
+          db.prepare('UPDATE fiados_detalle SET id_usuario = 1 WHERE id_usuario = ?').run(u.id)
+        }
+        db.prepare(`DELETE FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`).run()
+        console.log('[db : migrations] v1: usuario "Prueba" eliminado y movimientos reasignados')
+      }
+    }
+  },
+  {
+    version: 2,
+    descripcion: 'Columna ventas.id_usuario para trazabilidad',
+    up: () => {
+      const columnasVentas = db.pragma('table_info(ventas)') as { name: string }[]
+      if (!columnasVentas.some((c) => c.name === 'id_usuario')) {
+        db.exec('ALTER TABLE ventas ADD COLUMN id_usuario INTEGER REFERENCES usuarios(id)')
+        console.log("[db : migrations] v2: columna 'id_usuario' agregada a ventas")
+      }
+    }
+  }
+]
+
+function aplicarMigraciones(): void {
+  const versionActual = db.pragma('user_version', { simple: true }) as number
+  const pendientes = migraciones
+    .filter((m) => m.version > versionActual)
+    .sort((a, b) => a.version - b.version)
+
+  if (pendientes.length === 0) {
+    console.log('[db : migrations] Sin migraciones pendientes')
+    return
+  }
+
+  for (const m of pendientes) {
+    try {
+      db.transaction(() => {
+        m.up()
+        db.pragma(`user_version = ${m.version}`)
+      })()
+      console.log(`[db : migrations] Aplicada v${m.version}: ${m.descripcion}`)
+    } catch (err) {
+      console.error(`[db : migrations] Error aplicando v${m.version}: ${m.descripcion}`)
+      console.error(err)
+      throw err
+    }
+  }
+}
+
+aplicarMigraciones()
+// END: Migraciones versionadas
 
 const productCount = db.prepare('SELECT COUNT(*) as c FROM productos').get() as { c: number }
 console.log('Productos registrados:', productCount.c)
@@ -197,6 +252,67 @@ export function contarAdmins(): number {
   return res.c
 }
 
+export function usuarioTieneActividad(id: number): boolean {
+  const fiados = db
+    .prepare('SELECT COUNT(*) as c FROM fiados_detalle WHERE id_usuario = ?')
+    .get(id) as { c: number }
+  if (fiados.c > 0) return true
+  const ventas = db.prepare('SELECT COUNT(*) as c FROM ventas WHERE id_usuario = ?').get(id) as {
+    c: number
+  }
+  return ventas.c > 0
+}
+
+export interface EntradaAuditoria {
+  id_usuario: number | null
+  username: string | null
+  accion: string
+  entidad?: string | null
+  entidad_id?: number | null
+  detalle?: string | null
+}
+
+export function registrarAuditoria(entrada: EntradaAuditoria): Database.RunResult {
+  const { fecha, hora } = ahoraLocal()
+  return db
+    .prepare(
+      `INSERT INTO auditoria (id_usuario, username, accion, entidad, entidad_id, detalle, fecha, hora)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      entrada.id_usuario,
+      entrada.username,
+      entrada.accion,
+      entrada.entidad ?? null,
+      entrada.entidad_id ?? null,
+      entrada.detalle ?? null,
+      fecha,
+      hora
+    )
+}
+
+export interface AuditoriaRow {
+  id: number
+  fecha: string
+  hora: string
+  username: string | null
+  accion: string
+  entidad: string | null
+  entidad_id: number | null
+  detalle: string | null
+}
+
+export function getAuditoria(limit: number = 200): AuditoriaRow[] {
+  return db
+    .prepare(
+      `SELECT id, fecha, hora, username, accion, entidad, entidad_id, detalle
+       FROM auditoria
+       ORDER BY id DESC
+       LIMIT ?`
+    )
+    .all(limit) as AuditoriaRow[]
+}
+
 export interface LineaCarrito {
   producto_id: number | null
   nombre: string
@@ -205,9 +321,16 @@ export interface LineaCarrito {
   subtotal: number
 }
 
-export function registrarVenta(monto: number, lineas: LineaCarrito[]): Database.RunResult {
+export function registrarVenta(
+  monto: number,
+  lineas: LineaCarrito[],
+  id_usuario: number
+): Database.RunResult {
   return db.transaction(() => {
-    const venta = db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
+    const { fecha, hora } = ahoraLocal()
+    const venta = db
+      .prepare('INSERT INTO ventas (monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?)')
+      .run(monto, id_usuario, fecha, hora)
     const ventaId = venta.lastInsertRowid
 
     for (const l of lineas) {
@@ -245,7 +368,7 @@ export interface VentaHoy {
 export function getVentasHoy(): VentaHoy[] {
   const ventas = db
     .prepare(
-      "SELECT id, monto, hora FROM ventas WHERE fecha = date('now') ORDER BY id DESC LIMIT 20"
+      "SELECT id, monto, hora FROM ventas WHERE fecha = date('now', 'localtime') ORDER BY id DESC LIMIT 20"
     )
     .all() as { id: number; monto: number; hora: string }[]
 
@@ -262,7 +385,7 @@ export function getVentasHoy(): VentaHoy[] {
 export function getTotalVentasHoy(): { total: number; count: number } {
   return db
     .prepare(
-      "SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) as count FROM ventas WHERE fecha = date('now')"
+      "SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) as count FROM ventas WHERE fecha = date('now', 'localtime')"
     )
     .get() as { total: number; count: number }
 }
@@ -282,6 +405,7 @@ export function registrarFio(
   lineas: LineaCarrito[] = []
 ): Database.RunResult {
   return db.transaction(() => {
+    const { fecha, hora } = ahoraLocal()
     const existing = db.prepare('SELECT id FROM fiados WHERE nombre = ?').get(nombre) as
       | { id: number }
       | undefined
@@ -295,8 +419,10 @@ export function registrarFio(
         existing.id
       )
       result = db
-        .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
-        .run(existing.id, monto, id_usuario)
+        .prepare(
+          'INSERT INTO fiados_detalle (fiado_id, monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?, ?)'
+        )
+        .run(existing.id, monto, id_usuario, fecha, hora)
       fiadoId = existing.id
     } else {
       const fiado = db
@@ -304,8 +430,10 @@ export function registrarFio(
         .run(nombre, monto)
       fiadoId = fiado.lastInsertRowid
       result = db
-        .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
-        .run(fiadoId, monto, id_usuario)
+        .prepare(
+          'INSERT INTO fiados_detalle (fiado_id, monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?, ?)'
+        )
+        .run(fiadoId, monto, id_usuario, fecha, hora)
     }
 
     const detalleId = result.lastInsertRowid
@@ -350,7 +478,7 @@ export function getFiadosHoy(): FiadoHoy[] {
       SELECT f.nombre, fd.id AS detalle_id, fd.monto, fd.hora
       FROM fiados_detalle fd
       JOIN fiados f ON f.id = fd.fiado_id
-      WHERE fd.fecha = date('now')
+      WHERE fd.fecha = date('now', 'localtime')
       AND fd.monto > 0
       ORDER BY fd.id DESC
       LIMIT 10
@@ -378,7 +506,7 @@ export function getTotalFiadosHoy(): { total: number; deudores: number } {
       COALESCE(SUM(fd.monto), 0) AS total,
       COUNT(DISTINCT fd.fiado_id) AS deudores
     FROM fiados_detalle fd
-    WHERE fd.fecha = date('now')
+    WHERE fd.fecha = date('now', 'localtime')
     AND fd.monto > 0
     `
     )
@@ -398,9 +526,12 @@ export function abonarFiado(id: number, monto: number, id_usuario: number): Data
   if (!deudor) throw new Error('Deudor no encontrado')
   const nuevaDeuda = Math.max(0, deudor.deuda_total - monto)
   db.prepare('UPDATE fiados SET deuda_total = ? WHERE id = ?').run(nuevaDeuda, id)
+  const { fecha, hora } = ahoraLocal()
   return db
-    .prepare('INSERT INTO fiados_detalle (fiado_id, monto, id_usuario) VALUES (?, ?, ?)')
-    .run(id, -monto, id_usuario)
+    .prepare(
+      'INSERT INTO fiados_detalle (fiado_id, monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(id, -monto, id_usuario, fecha, hora)
 }
 
 export function getHistorialFiado(id: number): { monto: number; fecha: string; hora: string }[] {
@@ -417,20 +548,24 @@ export function getTodosLosFiados(): { id: number; nombre: string; deuda_total: 
 
 // Administrador de ventas y fíos
 
-export function getVentasAdmin(limit: number = 100): {
+export interface VentaAdmin {
   id: number
   monto: number
   fecha: string
   hora: string
-}[] {
+  username: string | null
+}
+
+export function getVentasAdmin(limit: number = 100): VentaAdmin[] {
   return db
-    .prepare('SELECT id, monto, fecha, hora FROM ventas ORDER BY id DESC LIMIT ?')
-    .all(limit) as {
-    id: number
-    monto: number
-    fecha: string
-    hora: string
-  }[]
+    .prepare(
+      `SELECT v.id, v.monto, v.fecha, v.hora, u.username
+       FROM ventas v
+       LEFT JOIN usuarios u ON u.id = v.id_usuario
+       ORDER BY v.id DESC
+       LIMIT ?`
+    )
+    .all(limit) as VentaAdmin[]
 }
 
 export function editarVenta(id: number, monto: number): Database.RunResult {
@@ -464,6 +599,7 @@ export function getFiadosDetalleAdmin(limit: number = 100): {
   monto: number
   fecha: string
   hora: string
+  username: string
 }[] {
   return db
     .prepare(
@@ -512,14 +648,20 @@ export function eliminarFiadoDetalle(detalle_id: number, fiado_id: number, monto
   })()
 }
 
-export function convertirFiadoAVenta(detalle_id: number, fiado_id: number, monto: number): void {
+export function convertirFiadoAVenta(
+  detalle_id: number,
+  fiado_id: number,
+  monto: number,
+  id_usuario: number
+): void {
   db.transaction(() => {
+    db.prepare('DELETE FROM fiados_detalle_items WHERE detalle_id = ?').run(detalle_id)
     db.prepare('DELETE FROM fiados_detalle WHERE id = ?').run(detalle_id)
     db.prepare('UPDATE fiados SET deuda_total = MAX(0, deuda_total - ?) WHERE id = ?').run(
       monto,
       fiado_id
     )
-    db.prepare('INSERT INTO ventas (monto) VALUES (?)').run(monto)
+    db.prepare('INSERT INTO ventas (monto, id_usuario) VALUES (?, ?)').run(monto, id_usuario)
   })()
 }
 

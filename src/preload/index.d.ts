@@ -77,7 +77,13 @@ declare global {
         ventas: {
           historial: () => Promise<{
             ok: boolean
-            ventas?: { id: number; monto: number; fecha: string; hora: string }[]
+            ventas?: {
+              id: number
+              monto: number
+              fecha: string
+              hora: string
+              username: string | null
+            }[]
             error?: string
           }>
           editar: (id: number, monto: number) => Promise<DefaultResponse>
@@ -114,6 +120,22 @@ declare global {
             fiado_id: number,
             monto: number
           ) => Promise<DefaultResponse>
+        }
+        auditoria: {
+          listar: () => Promise<{
+            ok: boolean
+            registros: {
+              id: number
+              fecha: string
+              hora: string
+              username: string | null
+              accion: string
+              entidad: string | null
+              entidad_id: number | null
+              detalle: string | null
+            }[]
+            error?: string
+          }>
         }
       }
       app: {
