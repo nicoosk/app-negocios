@@ -15,8 +15,8 @@ beforeEach(() => {
 })
 
 describe('esquema y migraciones', () => {
-  it('aplica las migraciones hasta user_version 3', () => {
-    expect(db.pragma('user_version', { simple: true })).toBe(3)
+  it('aplica las migraciones hasta user_version 4', () => {
+    expect(db.pragma('user_version', { simple: true })).toBe(4)
   })
 
   it('crea el admin bootstrap con id 1', () => {

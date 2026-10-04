@@ -125,6 +125,77 @@ export interface RegistroAuditoria {
   detalle: string | null
 }
 
+// ===== Estadísticas del dashboard =====
+export interface RangoFechas {
+  desde: string
+  hasta: string
+}
+
+export interface ResumenEstadisticas {
+  ventas: number
+  transacciones: number
+  ticketPromedio: number
+  unidades: number
+  fiado: number
+  deudaTotal: number
+  valorInventario: number
+}
+
+export interface PuntoDia {
+  fecha: string
+  monto: number
+  transacciones: number
+  fiado: number
+}
+
+export interface PuntoHora {
+  hora: number
+  monto: number
+  transacciones: number
+}
+
+export interface PuntoProducto {
+  nombre: string
+  unidades: number
+  monto: number
+}
+
+export interface PuntoDispersion {
+  venta_id: number
+  hora: number
+  horaTexto: string
+  monto: number
+  items: number
+}
+
+export interface PuntoUsuario {
+  username: string
+  monto: number
+  transacciones: number
+}
+
+export interface EstadoFiados {
+  fiado: number
+  abonos: number
+  recuperacion: number
+  topDeudores: ResumenFiado[]
+}
+
+// Carga única del dashboard para que todas las series compartan el mismo rango.
+export interface PanelEstadisticas {
+  rango: RangoFechas
+  resumen: ResumenEstadisticas
+  porDia: PuntoDia[]
+  porHora: PuntoHora[]
+  topPorMonto: PuntoProducto[]
+  topPorUnidades: PuntoProducto[]
+  mix: PuntoProducto[]
+  mixTotal: number
+  dispersion: PuntoDispersion[]
+  porUsuario: PuntoUsuario[]
+  estadoFiados: EstadoFiados
+}
+
 export type EstadoUpdater =
   | 'verificando'
   | 'disponible'

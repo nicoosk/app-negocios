@@ -16,6 +16,7 @@ import type {
   VentaHoy
 } from '../../shared/tipos'
 import { ahoraLocal } from './fecha'
+import { crearEstadisticas, type Estadisticas } from './estadisticas'
 
 // Contrato público de la capa núcleo, agrupado por dominio.
 export interface Nucleo {
@@ -99,6 +100,7 @@ export interface Nucleo {
     registrar: (entrada: EntradaAuditoria) => void
     listar: (limit?: number) => RegistroAuditoria[]
   }
+  estadisticas: Estadisticas
 }
 
 // Capa núcleo: toda la lógica de negocio y el acceso a SQLite, agrupados por
@@ -587,6 +589,7 @@ export function crearNucleo(db: DatabaseType): Nucleo {
     auditoria: {
       registrar: registrarAuditoria,
       listar: getAuditoria
-    }
+    },
+    estadisticas: crearEstadisticas(db)
   }
 }
