@@ -16,8 +16,11 @@ export function generarPaginaEscanner(): string {
         display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px;
       }
       h1 { font-size: 17px; margin: 6px 0 0; font-weight: 600; }
-      #lector { width: 100%; max-width: 420px; border-radius: 14px; overflow: hidden; background: #000; }
-      #lector video { width: 100% !important; }
+      #lector { width: 100%; max-width: 420px; max-height: 55vh; border-radius: 14px;
+        overflow: hidden; background: #000; }
+      #lector video { width: 100% !important; height: auto !important; }
+      #preview { width: 100%; max-width: 420px; max-height: 35vh; object-fit: contain;
+        border-radius: 12px; background: #000; display: none; }
       #estado { font-size: 14px; text-align: center; padding: 10px 14px; border-radius: 10px;
         background: #1e293b; width: 100%; max-width: 420px; min-height: 40px; line-height: 20px; }
       #estado.ok { background: #052e16; color: #4ade80; }
@@ -30,12 +33,19 @@ export function generarPaginaEscanner(): string {
       .foto { width: 100%; max-width: 420px; padding: 14px; border: 0; border-radius: 12px;
         background: #16a34a; color: white; font-size: 16px; font-weight: 700; }
       .ayuda { font-size: 12px; color: #94a3b8; text-align: center; max-width: 420px; }
+      details { width: 100%; max-width: 420px; }
+      summary { cursor: pointer; color: #94a3b8; font-size: 12px; padding: 4px 0; }
+      #log { margin: 8px 0 0; padding: 10px; max-height: 32vh; overflow: auto; text-align: left;
+        background: #0b1220; color: #93c5fd; font-size: 11px; line-height: 1.5;
+        border-radius: 10px; white-space: pre-wrap; word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     </style>
   </head>
   <body>
     <h1>Escanear código</h1>
     <div id="estado">Iniciando cámara…</div>
     <div id="lector"></div>
+    <img id="preview" alt="Foto del código" />
     <button id="btnFoto" class="foto">📷 Tomar foto del código</button>
     <input id="foto" type="file" accept="image/*" capture="environment" style="display:none" />
     <div class="manual">
@@ -44,11 +54,49 @@ export function generarPaginaEscanner(): string {
     </div>
     <p class="ayuda">La cámara en vivo necesita una conexión segura (HTTPS). Si no aparece, usa "Tomar foto del código" o escríbelo a mano.</p>
 
+    <details id="debug">
+      <summary>Registro técnico (toca para ver)</summary>
+      <pre id="log"></pre>
+    </details>
+
     <script src="/vendor.js"></script>
     <script>
       var token = new URLSearchParams(location.search).get('t') || '';
       var estado = document.getElementById('estado');
       var bloqueado = false;
+
+      var lineas = [];
+      var logEl = document.getElementById('log');
+      function addLog(mensaje) {
+        var ahora = new Date();
+        var hh = ('0' + ahora.getHours()).slice(-2);
+        var mm = ('0' + ahora.getMinutes()).slice(-2);
+        var ss = ('0' + ahora.getSeconds()).slice(-2);
+        lineas.push(hh + ':' + mm + ':' + ss + '  ' + mensaje);
+        if (lineas.length > 300) lineas = lineas.slice(-300);
+        logEl.textContent = lineas.join('\\n');
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function describir(e) {
+        if (e === null || e === undefined) return String(e);
+        if (typeof e === 'string') return e;
+        if (e.name || e.message) return (e.name ? e.name + ': ' : '') + (e.message || '');
+        try { return JSON.stringify(e); } catch (_) { return String(e); }
+      }
+
+      (function () {
+        var original = { log: console.log, warn: console.warn, error: console.error };
+        ['log', 'warn', 'error'].forEach(function (nivel) {
+          console[nivel] = function () {
+            var partes = Array.prototype.map.call(arguments, function (a) {
+              return typeof a === 'string' ? a : describir(a);
+            });
+            addLog('[' + nivel + '] ' + partes.join(' '));
+            original[nivel].apply(console, arguments);
+          };
+        });
+      })();
 
       function setEstado(texto, clase) {
         estado.textContent = texto;
@@ -66,10 +114,10 @@ export function generarPaginaEscanner(): string {
         })
           .then(function (r) { return r.json(); })
           .then(function (d) {
-            if (d.ok) setEstado('Enviado: ' + codigo, 'ok');
+            if (d.ok) { setEstado('Enviado: ' + codigo, 'ok'); addLog('Enviado al PC: ' + codigo); }
             else setEstado('Error: ' + (d.error || 'desconocido'), 'err');
           })
-          .catch(function () { setEstado('Error de red con el PC', 'err'); })
+          .catch(function (e) { setEstado('Error de red con el PC', 'err'); addLog('Error de red: ' + describir(e)); })
           .finally(function () {
             setTimeout(function () { bloqueado = false; }, 1200);
           });
@@ -95,35 +143,123 @@ export function generarPaginaEscanner(): string {
         Html5QrcodeSupportedFormats.QR_CODE
       ];
 
-      var lector = new Html5Qrcode('lector', { formatsToSupport: formatos, verbose: false });
+      // Forzamos ZXing para live (evita BarcodeDetector nativo poco fiable con 1D).
+      var lector = new Html5Qrcode('lector', {
+        formatsToSupport: formatos,
+        verbose: true,
+        experimentalFeatures: { useBarCodeDetectorIfSupported: false }
+      });
+
+      try {
+        addLog('navegador: ' + navigator.userAgent);
+        addLog('protocolo: ' + location.protocol + ' | contexto seguro: ' + (window.isSecureContext ? 'sí' : 'no'));
+        addLog('cámara en vivo disponible: ' + (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'sí' : 'no'));
+        addLog('BarcodeDetector disponible: ' + ('BarcodeDetector' in window ? 'sí' : 'no'));
+        if ('BarcodeDetector' in window && window.BarcodeDetector.getSupportedFormats) {
+          window.BarcodeDetector.getSupportedFormats()
+            .then(function (f) { addLog('BarcodeDetector formatos: ' + f.join(', ')); })
+            .catch(function (e) { addLog('getSupportedFormats falló: ' + describir(e)); });
+        }
+      } catch (e) { addLog('diagnóstico falló: ' + describir(e)); }
+
+      // Decodificación con el BarcodeDetector nativo del navegador, si existe.
+      // Suele ser lo más fiable para códigos 1D en fotos.
+      async function decodificarNativo(file) {
+        if (!('BarcodeDetector' in window)) return null;
+        var soportados = [];
+        if (window.BarcodeDetector.getSupportedFormats) {
+          soportados = await window.BarcodeDetector.getSupportedFormats();
+        }
+        var deseados = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'itf', 'codabar', 'qr_code'];
+        var usar = deseados.filter(function (f) { return soportados.indexOf(f) !== -1; });
+        if (!usar.length) { addLog('BarcodeDetector sin formatos útiles'); return null; }
+
+        var bitmap = await createImageBitmap(file);
+        var max = 1600;
+        var escala = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+        var ancho = Math.round(bitmap.width * escala);
+        var alto = Math.round(bitmap.height * escala);
+        var canvas = document.createElement('canvas');
+        canvas.width = ancho;
+        canvas.height = alto;
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, ancho, alto);
+        if (bitmap.close) bitmap.close();
+        addLog('nativo: canvas ' + ancho + 'x' + alto + ' formatos [' + usar.join(',') + ']');
+
+        var detector = new window.BarcodeDetector({ formats: usar });
+        var encontrados = await detector.detect(canvas);
+        addLog('nativo: detectados ' + encontrados.length);
+        if (!encontrados.length) return null;
+        encontrados.forEach(function (c) { addLog('nativo: ' + c.format + ' = ' + c.rawValue); });
+        return encontrados[0].rawValue;
+      }
+
+      // Reescala la foto para no procesar imágenes enormes (mejora ZXing).
+      async function escalar(file, max) {
+        var bitmap = await createImageBitmap(file);
+        var escala = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+        addLog('foto original: ' + bitmap.width + 'x' + bitmap.height + ' escala ' + escala.toFixed(2));
+        if (escala >= 1) { if (bitmap.close) bitmap.close(); return file; }
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * escala);
+        canvas.height = Math.round(bitmap.height * escala);
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        if (bitmap.close) bitmap.close();
+        var blob = await new Promise(function (resolver) { canvas.toBlob(resolver, 'image/jpeg', 0.92); });
+        return new File([blob], 'foto.jpg', { type: 'image/jpeg' });
+      }
+
+      async function decodificarFoto(file) {
+        try {
+          var nativo = await decodificarNativo(file);
+          if (nativo) return nativo;
+        } catch (e) {
+          addLog('decoder nativo falló: ' + describir(e));
+        }
+        var reducida = await escalar(file, 1600);
+        addLog('probando ZXing (scanFile)…');
+        return await lector.scanFile(reducida, false);
+      }
 
       function caja(vw) {
         var ancho = Math.floor(vw * 0.9);
         return { width: ancho, height: Math.floor(ancho * 0.45) };
       }
 
-      lector.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: caja, aspectRatio: 1.0 },
-        function (texto) { enviarCodigo(texto); },
-        function () {}
-      ).then(function () {
-        setEstado('Cámara activa. Apunta al código.', 'ok');
-      }).catch(function () {
-        setEstado('No se pudo abrir la cámara en vivo. Usa "Tomar foto del código".', 'err');
-      });
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        lector.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: caja, aspectRatio: 1.0 },
+          function (texto) { enviarCodigo(texto); },
+          function () {}
+        ).then(function () {
+          setEstado('Cámara activa. Apunta al código.', 'ok');
+        }).catch(function (err) {
+          addLog('start falló: ' + describir(err));
+          setEstado('No se pudo abrir la cámara. Usa "Tomar foto del código".', 'err');
+        });
+      } else {
+        addLog('getUserMedia no disponible (se requiere HTTPS)');
+        setEstado('Cámara en vivo no disponible. Usa "Tomar foto del código".', 'err');
+      }
 
       var btnFoto = document.getElementById('btnFoto');
       var inputFoto = document.getElementById('foto');
+      var preview = document.getElementById('preview');
       btnFoto.addEventListener('click', function () { inputFoto.click(); });
       inputFoto.addEventListener('change', function () {
         var file = inputFoto.files && inputFoto.files[0];
         if (!file) return;
+        addLog('archivo: ' + (file.name || 'sin nombre') + ' ' + Math.round(file.size / 1024) + 'KB ' + (file.type || ''));
+        if (preview.src) URL.revokeObjectURL(preview.src);
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
         setEstado('Leyendo foto…');
-        lector.scanFile(file, true)
-          .then(function (texto) { enviarCodigo(texto); })
-          .catch(function () {
-            setEstado('No se detectó un código en la foto. Intenta de nuevo.', 'err');
+        decodificarFoto(file)
+          .then(function (texto) { addLog('código final: ' + texto); enviarCodigo(texto); })
+          .catch(function (e) {
+            addLog('sin código: ' + describir(e));
+            setEstado('No se detectó ningún código. Revisa el registro técnico.', 'err');
           })
           .finally(function () { inputFoto.value = ''; });
       });
