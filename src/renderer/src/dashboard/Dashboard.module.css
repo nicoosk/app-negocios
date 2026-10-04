@@ -116,6 +116,26 @@
   color: #444;
 }
 
+.delta {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.deltaPos {
+  color: #4ade80;
+}
+
+.deltaNeg {
+  color: #f87171;
+}
+
+.deltaNeutro {
+  color: #555;
+  font-weight: 500;
+}
+
 .grids {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

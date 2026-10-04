@@ -308,7 +308,7 @@ export function generarPaginaEscanner(): string {
 
       function caja(vw) {
         var ancho = Math.floor(vw * 0.9);
-        return { width: ancho, height: Math.floor(ancho * 0.45) };
+        return { width: ancho, height: Math.floor(ancho * 0.6) };
       }
 
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
