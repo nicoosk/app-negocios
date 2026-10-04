@@ -27,7 +27,7 @@ export interface Api {
   fiados: {
     buscar: (query: string) => Promise<ResumenFiado[]>
     registrar: (nombre: string, monto: number, lineas: LineaCarrito[]) => Promise<RespuestaApi>
-    hoy: () => Promise<{ fios: FiadoHoy[]; total: number; deudores: number }>
+    hoy: () => Promise<{ fiados: FiadoHoy[]; total: number; deudores: number }>
     total: () => Promise<{ total: number }>
     todos: () => Promise<ResumenFiado[]>
     abonar: (id: number, monto: number) => Promise<RespuestaApi>

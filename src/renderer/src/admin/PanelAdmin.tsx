@@ -1,79 +1,30 @@
 import { JSX, useCallback, useEffect, useState } from 'react'
 import styles from '@renderer/admin/PanelAdmin.module.css'
 import { Settings } from 'lucide-react'
+import { fmt } from '@renderer/utils/formatter'
+import { similar } from '@renderer/utils/search'
+import type { FiadoDetalleAdmin, RegistroAuditoria, ResumenFiado, VentaAdmin } from '@shared/tipos'
+
 type TabActiva = 'ventas' | 'fiados' | 'auditoria'
 type TipoRegistro = 'ventas' | 'fiados'
-
-interface VentaAdmin {
-  id: number
-  monto: number
-  fecha: string
-  hora: string
-  username: string | null
-}
-
-interface FiadoDetalleAdmin {
-  id: number
-  fiado_id: number
-  nombre: string
-  monto: number
-  fecha: string
-  hora: string
-  username: string
-}
-
-interface AuditoriaRegistro {
-  id: number
-  fecha: string
-  hora: string
-  username: string | null
-  accion: string
-  entidad: string | null
-  entidad_id: number | null
-  detalle: string | null
-}
 
 type EstadoEdicion =
   | { tipo: 'ninguno' }
   | { tipo: 'venta'; registro: VentaAdmin }
   | { tipo: 'fiado'; registro: FiadoDetalleAdmin }
 
-const fmt = (n: number): string => n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })
-
-function similar(a: string, b: string): boolean {
-  const norm = (s: string): string =>
-    s
-      .toLocaleLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-  const na = norm(a)
-  const nb = norm(b)
-  if (nb.includes(na) || na.includes(nb)) return true
-  let matches = 0
-  for (const c of na) if (nb.includes(c)) matches++
-  return matches / Math.max(na.length, 1) > 0.55
-}
-
 export default function PanelAdmin(): JSX.Element {
   const [tab, setTab] = useState<TabActiva>('ventas')
   const [ventas, setVentas] = useState<VentaAdmin[]>([])
   const [fiados, setFiados] = useState<FiadoDetalleAdmin[]>([])
-  const [auditoria, setAuditoria] = useState<AuditoriaRegistro[]>([])
+  const [auditoria, setAuditoria] = useState<RegistroAuditoria[]>([])
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [edicion, setEdicion] = useState<EstadoEdicion>({ tipo: 'ninguno' })
   const [montoEdicion, setMontoEdicion] = useState('')
   const [nombreConversion, setNombreConversion] = useState('')
-  const [deudores, setDeudores] = useState<{ id: number; nombre: string; deuda_total: number }[]>(
-    []
-  )
-  const [sugerenciasConversion, setSugerenciasConversion] = useState<
-    {
-      id: number
-      nombre: string
-      deuda_total: number
-    }[]
-  >([])
+  const [deudores, setDeudores] = useState<ResumenFiado[]>([])
+  const [sugerenciasConversion, setSugerenciasConversion] = useState<ResumenFiado[]>([])
   const [seleccionado, setSeleccionado] = useState(false)
 
   const cargarVentas = useCallback(async (): Promise<void> => {
@@ -205,8 +156,8 @@ export default function PanelAdmin(): JSX.Element {
       </div>
       <span className={styles.descripcion}>
         En este panel puedes administrar todas tus ventas y fíos históricos. Cada registro puede ser
-        editado, convertido a otro tipo o elminarse. Cada acción necesita ser realizada por un admin
-        autorizado.
+        editado, convertido a otro tipo o eliminarse. Cada acción necesita ser realizada por un
+        admin autorizado.
       </span>
       <div className={styles.tabs}>
         <div className={styles.tabsWrapper}>

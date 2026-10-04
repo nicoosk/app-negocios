@@ -1,13 +1,7 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './PanelUsuarios.module.css'
 import { Eye, EyeOff, Users } from 'lucide-react'
-
-export interface Usuario {
-  id: number
-  username: string
-  creado_en: string
-  is_admin: boolean
-}
+import type { Usuario } from '@shared/tipos'
 
 export default function PanelUsuarios(): JSX.Element {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])

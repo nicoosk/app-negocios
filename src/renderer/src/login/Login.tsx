@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { JSX, useEffect, useRef, useState } from 'react'
 import styles from './Login.module.css'
-import { JSX } from 'react/jsx-runtime'
 import { Sesion } from '@renderer/types'
 import UpdaterBanner from '@renderer/dashboard/UpdateBanner'
 
