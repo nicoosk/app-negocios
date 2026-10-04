@@ -92,8 +92,8 @@ export function registrarIpc(nucleo: Nucleo): void {
   )
 
   ipcMain.handle('fiados:hoy', () => {
-    if (!sesionActual()) return { fios: [], total: 0, deudores: 0 }
-    return { fios: nucleo.fiados.hoy(), ...nucleo.fiados.totalHoy() }
+    if (!sesionActual()) return { fiados: [], total: 0, deudores: 0 }
+    return { fiados: nucleo.fiados.hoy(), ...nucleo.fiados.totalHoy() }
   })
 
   ipcMain.handle('fiados:total', () => {

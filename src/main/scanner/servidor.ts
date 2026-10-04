@@ -127,11 +127,6 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
       return
     }
 
-    if (req.method === 'GET' && url.pathname === '/estado') {
-      responder(res, 200, JSON.stringify({ ok: true }))
-      return
-    }
-
     if (req.method === 'GET' && url.pathname === '/eventos') {
       if (!tokenValido(url.searchParams.get('t'))) {
         responder(res, 403, JSON.stringify({ ok: false, error: 'Token inválido' }))

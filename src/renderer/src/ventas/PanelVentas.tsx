@@ -3,41 +3,20 @@ import TabVentas from './TabVentas'
 import styles from './PanelVentas.module.css'
 import ModalDeudores from '../fiados/ModalDeudores'
 import { ShoppingCart } from 'lucide-react'
-const fmt = (n: number): string => '$' + n.toLocaleString('es-CL')
-
-interface ItemVenta {
-  nombre_producto: string
-  cantidad: number
-  subtotal: number
-}
-
-interface Venta {
-  id: number
-  monto: number
-  hora: string
-  items: ItemVenta[]
-}
-
-interface Fio {
-  nombre: string
-  monto: number
-  hora: string
-}
+import { fmt } from '@renderer/utils/formatter'
+import type { FiadoHoy, VentaHoy } from '@shared/tipos'
 
 interface PanelVentasProps {
   username: string
 }
 
-// type tabs = 'ventas' | 'fiar'
-
 export default function PanelVentas({ username }: PanelVentasProps): JSX.Element {
-  // const [tab, setTab] = useState<tabs>('ventas')
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
-  const [ventas, setVentas] = useState<Venta[]>([])
+  const [ventas, setVentas] = useState<VentaHoy[]>([])
   const [totalFios, setTotalFios] = useState(0)
   const [deudores, setDeudores] = useState(0)
-  const [fios, setFios] = useState<Fio[]>([])
+  const [fios, setFios] = useState<FiadoHoy[]>([])
   const [modalDeudores, setModalDeudores] = useState<boolean>(false)
 
   const fecha = new Date().toLocaleDateString('es-CL', {
@@ -60,7 +39,7 @@ export default function PanelVentas({ username }: PanelVentasProps): JSX.Element
     ])
     setTotalFios(data.total)
     setDeudores(fiosTotales.total)
-    setFios(data.fios)
+    setFios(data.fiados)
   }
 
   useEffect(() => {
@@ -75,7 +54,7 @@ export default function PanelVentas({ username }: PanelVentasProps): JSX.Element
       setVentas(dataVentas.ventas)
       setTotalFios(dataFios.total)
       setDeudores(dataFiosTotales.total)
-      setFios(dataFios.fios)
+      setFios(dataFios.fiados)
     }
 
     cargar()

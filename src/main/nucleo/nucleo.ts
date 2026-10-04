@@ -151,30 +151,32 @@ export function crearNucleo(db: DatabaseType): Nucleo {
   }
 
   // ===== Ventas =====
+  function insertarLineas(
+    tabla: 'ventas_detalle' | 'fiados_detalle_items',
+    columna: 'venta_id' | 'detalle_id',
+    padreId: number | bigint,
+    lineas: LineaCarrito[]
+  ): void {
+    const insertar = db.prepare(
+      `INSERT INTO ${tabla} (${columna}, producto_id, nombre_producto, precio_unitario, cantidad, subtotal)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    const descontarStock = db.prepare('UPDATE productos SET stock = MAX(0, stock - ?) WHERE id = ?')
+    for (const l of lineas) {
+      insertar.run(padreId, l.producto_id, l.nombre, l.precio_unitario, l.cantidad, l.subtotal)
+      if (l.producto_id !== null) descontarStock.run(l.cantidad, l.producto_id)
+    }
+  }
+
   function registrarVenta(monto: number, lineas: LineaCarrito[], id_usuario: number): number {
     return db.transaction(() => {
       const { fecha, hora } = ahoraLocal()
       const venta = db
         .prepare('INSERT INTO ventas (monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?)')
         .run(monto, id_usuario, fecha, hora)
-      const ventaId = venta.lastInsertRowid
 
-      for (const l of lineas) {
-        db.prepare(
-          `INSERT INTO ventas_detalle
-          (venta_id, producto_id, nombre_producto, precio_unitario, cantidad, subtotal)
-          VALUES (?, ?, ?, ?, ?, ?)`
-        ).run(ventaId, l.producto_id, l.nombre, l.precio_unitario, l.cantidad, l.subtotal)
-
-        if (l.producto_id !== null) {
-          db.prepare('UPDATE productos SET stock = MAX(0, stock - ?) WHERE id = ?').run(
-            l.cantidad,
-            l.producto_id
-          )
-        }
-      }
-
-      return Number(ventaId)
+      insertarLineas('ventas_detalle', 'venta_id', venta.lastInsertRowid, lineas)
+      return Number(venta.lastInsertRowid)
     })()
   }
 
@@ -258,49 +260,28 @@ export function crearNucleo(db: DatabaseType): Nucleo {
         | { id: number }
         | undefined
 
-      let fiadoId: number | bigint
-      let detalleId: number | bigint
-
+      let fiadoId: number
       if (existing) {
         db.prepare('UPDATE fiados SET deuda_total = deuda_total + ? WHERE id = ?').run(
           monto,
           existing.id
         )
-        const result = db
-          .prepare(
-            'INSERT INTO fiados_detalle (fiado_id, monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?, ?)'
-          )
-          .run(existing.id, monto, id_usuario, fecha, hora)
         fiadoId = existing.id
-        detalleId = result.lastInsertRowid
       } else {
         const fiado = db
           .prepare('INSERT INTO fiados (nombre, deuda_total) VALUES (?, ?)')
           .run(nombre, monto)
-        fiadoId = fiado.lastInsertRowid
-        const result = db
-          .prepare(
-            'INSERT INTO fiados_detalle (fiado_id, monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?, ?)'
-          )
-          .run(fiadoId, monto, id_usuario, fecha, hora)
-        detalleId = result.lastInsertRowid
+        fiadoId = Number(fiado.lastInsertRowid)
       }
 
-      for (const l of lineas) {
-        db.prepare(
-          `INSERT INTO fiados_detalle_items
-            (detalle_id, producto_id, nombre_producto, precio_unitario, cantidad, subtotal)
-            VALUES (?, ?, ?, ?, ?, ?)
-          `
-        ).run(detalleId, l.producto_id, l.nombre, l.precio_unitario, l.cantidad, l.subtotal)
+      const detalle = db
+        .prepare(
+          'INSERT INTO fiados_detalle (fiado_id, monto, id_usuario, fecha, hora) VALUES (?, ?, ?, ?, ?)'
+        )
+        .run(fiadoId, monto, id_usuario, fecha, hora)
+      const detalleId = detalle.lastInsertRowid
 
-        if (l.producto_id !== null) {
-          db.prepare('UPDATE productos SET stock = MAX(0, stock - ?) WHERE id = ?').run(
-            l.cantidad,
-            l.producto_id
-          )
-        }
-      }
+      insertarLineas('fiados_detalle_items', 'detalle_id', detalleId, lineas)
 
       return Number(detalleId)
     })()

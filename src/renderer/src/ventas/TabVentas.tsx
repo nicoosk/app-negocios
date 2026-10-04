@@ -2,7 +2,8 @@ import { JSX, useCallback, useEffect, useRef, useState } from 'react'
 import styles from './TabVentas.module.css'
 import { Plus, ScanLine, Search, ShoppingBag } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-import { Fiado, ItemCarrito, Producto } from './types'
+import type { Producto, ResumenFiado } from '@shared/tipos'
+import { ItemCarrito } from './types'
 import CartItem from './ItemCarrito'
 import { similar } from '@renderer/utils/search'
 import { useEscaner } from '../escaner/contexto'
@@ -32,8 +33,8 @@ export default function TabVentas({
 
   const [modalFio, setModalFio] = useState(false)
   const [nombreFio, setNombreFio] = useState('')
-  const [todosDeudores, setTodosDeudores] = useState<Fiado[]>([])
-  const [sugerenciasFio, setSugerenciasFio] = useState<Fiado[]>([])
+  const [todosDeudores, setTodosDeudores] = useState<ResumenFiado[]>([])
+  const [sugerenciasFio, setSugerenciasFio] = useState<ResumenFiado[]>([])
   const [seleccionadoFio, setSeleccionadoFio] = useState<{
     nombre: string
     deuda_total: number

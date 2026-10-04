@@ -238,9 +238,9 @@ export function generarPaginaEscanner(): string {
           var lienzo = rotar(canvas, angulos[a]);
           for (var b = 0; b < binarizadores.length; b++) {
             try {
-              var lector = new ZXing.MultiFormatReader(false, hints);
+              var reader = new ZXing.MultiFormatReader(false, hints);
               var bitmap = binarizadores[b](new ZXing.HTMLCanvasElementLuminanceSource(lienzo));
-              var resultado = lector.decode(bitmap);
+              var resultado = reader.decode(bitmap);
               addLog('zxing ok (ángulo ' + angulos[a] + ')');
               return resultado.text;
             } catch (e) { ultimoError = e; }

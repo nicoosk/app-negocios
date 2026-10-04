@@ -205,7 +205,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
       {filtrados.length === 0 ? (
         <div className={styles.empty}>
           {busqueda
-            ? 'Sin resultados para esa búsqueeda'
+            ? 'Sin resultados para esa búsqueda'
             : 'No hay productos aún. ¡Agrega el primero!'}
         </div>
       ) : (

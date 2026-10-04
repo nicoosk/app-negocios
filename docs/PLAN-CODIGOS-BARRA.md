@@ -61,7 +61,7 @@ Cambios:
   `iniciar()`, `detener()`, `estado()`. HTTP nativo de Node, bind `0.0.0.0`,
   puerto `8787` con fallback a libre, token aleatorio validado.
   Rutas: `GET /` (página móvil), `POST /scan` (recibe `{ codigo }`),
-  `GET /estado`.
+  `GET /eventos` (SSE de estado), `GET /certificado.crt`.
 - `src/main/scanner/index.ts`: wiring; arranca en `app.whenReady`, detiene en
   `before-quit`, y reenvía el código a la ventana con
   `webContents.send('scanner:codigo', codigo)`.

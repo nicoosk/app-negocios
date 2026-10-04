@@ -66,7 +66,7 @@ export default function UpdaterBanner({ onSidebar }: UpdaterBannerProps): JSX.El
 
   useEffect(() => {
     const cleanup = window.api.updater.onEstado((p) => {
-      if (p.estado == 'al-dia' || p.estado === 'verificando') return
+      if (p.estado === 'al-dia' || p.estado === 'verificando') return
       setPayload(p)
       setDescartado(false)
       setNotas(null)
