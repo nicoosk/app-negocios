@@ -1,5 +1,5 @@
 import { app, ipcMain } from 'electron'
-import type { LineaCarrito } from '../../shared/tipos'
+import type { LineaCarrito, PanelEstadisticas } from '../../shared/tipos'
 import type { Nucleo } from '../nucleo'
 import { crearAuditar } from '../auditoria'
 import {
@@ -284,6 +284,29 @@ export function registrarIpc(nucleo: Nucleo): void {
       return { ok: false, registros: [], error: 'Error interno' }
     }
   })
+
+  // ===== Dashboard (estadísticas) =====
+  ipcMain.handle(
+    'estadisticas:panel',
+    (_e, desde: string, hasta: string): PanelEstadisticas | null => {
+      if (!sesionActual()) return null
+      const est = nucleo.estadisticas
+      const mix = est.mixProductos(desde, hasta, 6)
+      return {
+        rango: { desde, hasta },
+        resumen: est.resumen(desde, hasta),
+        porDia: est.ventasPorDia(desde, hasta),
+        porHora: est.ventasPorHora(desde, hasta),
+        topPorMonto: est.topProductos(desde, hasta, 'monto', 8),
+        topPorUnidades: est.topProductos(desde, hasta, 'unidades', 8),
+        mix: mix.items,
+        mixTotal: mix.total,
+        dispersion: est.dispersion(desde, hasta, 400),
+        porUsuario: est.porUsuario(desde, hasta),
+        estadoFiados: est.estadoFiados(desde, hasta)
+      }
+    }
+  )
 
   // ===== Productos / Inventario =====
   ipcMain.handle('productos:listar', () => {
