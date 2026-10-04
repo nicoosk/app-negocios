@@ -131,14 +131,20 @@ export interface RangoFechas {
   hasta: string
 }
 
-export interface ResumenEstadisticas {
+export interface TotalesPeriodo {
   ventas: number
   transacciones: number
   ticketPromedio: number
   unidades: number
   fiado: number
+}
+
+export interface ResumenEstadisticas extends TotalesPeriodo {
   deudaTotal: number
+  deudoresActivos: number
   valorInventario: number
+  productosActivos: number
+  anterior: TotalesPeriodo
 }
 
 export interface PuntoDia {

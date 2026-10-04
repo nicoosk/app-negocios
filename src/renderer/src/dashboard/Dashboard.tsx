@@ -16,6 +16,25 @@ import GraficoPorUsuario from './graficos/GraficoPorUsuario'
 import GraficoDispersion from './graficos/GraficoDispersion'
 import GraficoEstadoFiados from './graficos/GraficoEstadoFiados'
 
+// Compara la métrica con el período anterior de igual duración.
+function Delta({ actual, anterior }: { actual: number; anterior: number }): JSX.Element {
+  if (anterior === 0) {
+    return (
+      <span className={`${styles.delta} ${styles.deltaNeutro}`}>
+        {actual === 0 ? 'sin movimientos' : 'nuevo vs anterior'}
+      </span>
+    )
+  }
+  const cambio = Math.round(((actual - anterior) / anterior) * 100)
+  const clase = cambio > 0 ? styles.deltaPos : cambio < 0 ? styles.deltaNeg : styles.deltaNeutro
+  return (
+    <span className={`${styles.delta} ${clase}`}>
+      {cambio > 0 ? '+' : ''}
+      {cambio}% vs período anterior
+    </span>
+  )
+}
+
 export default function Dashboard(): JSX.Element {
   const [periodo, setPeriodo] = useState<Periodo>('hoy')
   const [desdeCustom, setDesdeCustom] = useState(haceDias(29))
@@ -57,6 +76,14 @@ export default function Dashboard(): JSX.Element {
   const abrirDetalle = (titulo: string, filas: FilaDetalle[]): void => setDetalle({ titulo, filas })
 
   const resumen = panel?.resumen
+  const anterior = resumen?.anterior
+  const transacciones = resumen?.transacciones ?? 0
+  const unidades = resumen?.unidades ?? 0
+  const itemsPorVenta = transacciones > 0 ? unidades / transacciones : 0
+  const itemsPorVentaAnterior =
+    anterior && anterior.transacciones > 0 ? anterior.unidades / anterior.transacciones : 0
+  const tasaFiado = resumen && resumen.ventas > 0 ? resumen.fiado / resumen.ventas : 0
+  const tasaFiadoAnterior = anterior && anterior.ventas > 0 ? anterior.fiado / anterior.ventas : 0
 
   return (
     <div className={styles.pagina}>
@@ -80,19 +107,29 @@ export default function Dashboard(): JSX.Element {
         <div className={`${styles.statCard} ${styles.green}`}>
           <span className={styles.statLabel}>VENTAS</span>
           <span className={styles.statValor}>{fmt(resumen?.ventas ?? 0)}</span>
-          <span className={styles.statSub}>{resumen?.transacciones ?? 0} transacciones</span>
+          <span className={styles.statSub}>{transacciones} transacciones</span>
+          <Delta actual={resumen?.ventas ?? 0} anterior={anterior?.ventas ?? 0} />
         </div>
 
         <div className={styles.statCard}>
           <span className={styles.statLabel}>TICKET PROMEDIO</span>
           <span className={styles.statValor}>{fmt(resumen?.ticketPromedio ?? 0)}</span>
           <span className={styles.statSub}>promedio por venta</span>
+          <Delta actual={resumen?.ticketPromedio ?? 0} anterior={anterior?.ticketPromedio ?? 0} />
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>ÍTEMS POR VENTA</span>
+          <span className={styles.statValor}>{itemsPorVenta.toFixed(1)}</span>
+          <span className={styles.statSub}>{unidades} unidades vendidas</span>
+          <Delta actual={itemsPorVenta} anterior={itemsPorVentaAnterior} />
         </div>
 
         <div className={`${styles.statCard} ${styles.purple}`}>
-          <span className={styles.statLabel}>FIADO</span>
-          <span className={styles.statValor}>{fmt(resumen?.fiado ?? 0)}</span>
-          <span className={styles.statSub}>fiado en el período</span>
+          <span className={styles.statLabel}>TASA DE FIADO</span>
+          <span className={styles.statValor}>{Math.round(tasaFiado * 100)}%</span>
+          <span className={styles.statSub}>{fmt(resumen?.fiado ?? 0)} fiado en el período</span>
+          <Delta actual={tasaFiado} anterior={tasaFiadoAnterior} />
         </div>
 
         <div
@@ -101,19 +138,13 @@ export default function Dashboard(): JSX.Element {
         >
           <span className={styles.statLabel}>DEUDA TOTAL</span>
           <span className={styles.statValor}>{fmt(resumen?.deudaTotal ?? 0)}</span>
-          <span className={styles.statSub}>saldo pendiente de cobro</span>
-        </div>
-
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>UNIDADES</span>
-          <span className={styles.statValor}>{resumen?.unidades ?? 0}</span>
-          <span className={styles.statSub}>unidades vendidas</span>
+          <span className={styles.statSub}>{resumen?.deudoresActivos ?? 0} deudores con saldo</span>
         </div>
 
         <div className={styles.statCard}>
           <span className={styles.statLabel}>INVENTARIO</span>
           <span className={styles.statValor}>{fmt(resumen?.valorInventario ?? 0)}</span>
-          <span className={styles.statSub}>stock valorizado</span>
+          <span className={styles.statSub}>{resumen?.productosActivos ?? 0} productos activos</span>
         </div>
       </div>
 

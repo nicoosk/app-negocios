@@ -79,7 +79,19 @@ describe('estadisticas.resumen', () => {
     expect(resumen.unidades).toBe(3)
     expect(resumen.fiado).toBe(500)
     expect(resumen.deudaTotal).toBe(500)
+    expect(resumen.deudoresActivos).toBe(1)
     expect(resumen.valorInventario).toBe(5000)
+    expect(resumen.productosActivos).toBe(1)
+  })
+
+  it('compara con el período anterior de igual duración', () => {
+    insertarVenta(1000, '2026-01-01', '10:00:00')
+    insertarVenta(3000, '2026-01-04', '10:00:00')
+
+    const resumen = nucleo.estadisticas.resumen('2026-01-04', '2026-01-06')
+    expect(resumen.ventas).toBe(3000)
+    expect(resumen.anterior.ventas).toBe(1000)
+    expect(resumen.anterior.transacciones).toBe(1)
   })
 
   it('devuelve ceros sin datos', () => {

@@ -6,7 +6,9 @@ import type {
   PuntoHora,
   PuntoProducto,
   PuntoUsuario,
-  ResumenEstadisticas
+  RangoFechas,
+  ResumenEstadisticas,
+  TotalesPeriodo
 } from '../../shared/tipos'
 
 // Contrato público de las consultas agregadas del dashboard.
@@ -68,8 +70,23 @@ function fechasEntre(desde: string, hasta: string): string[] {
   return fechas
 }
 
+// Rango inmediatamente anterior de igual duración, para comparar período contra
+// período (p. ej. "hoy" vs "ayer", "7 días" vs "los 7 días previos").
+function periodoAnterior(desde: string, hasta: string): RangoFechas {
+  const inicio = new Date(`${desde}T12:00:00`)
+  const fin = new Date(`${hasta}T12:00:00`)
+  const dias = Math.max(1, Math.round((fin.getTime() - inicio.getTime()) / 86400000) + 1)
+  const finAnterior = new Date(inicio)
+  finAnterior.setDate(finAnterior.getDate() - 1)
+  const inicioAnterior = new Date(finAnterior)
+  inicioAnterior.setDate(inicioAnterior.getDate() - (dias - 1))
+  return { desde: formatearFecha(inicioAnterior), hasta: formatearFecha(finAnterior) }
+}
+
 export function crearEstadisticas(db: DatabaseType): Estadisticas {
-  function resumen(desde: string, hasta: string): ResumenEstadisticas {
+  // Totales base de un período. Se usan para el resumen actual y para el
+  // período inmediatamente anterior (comparación de las tarjetas).
+  function totales(desde: string, hasta: string): TotalesPeriodo {
     const ventas = db
       .prepare(
         'SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) AS transacciones FROM ventas WHERE fecha BETWEEN ? AND ?'
@@ -91,25 +108,42 @@ export function crearEstadisticas(db: DatabaseType): Estadisticas {
       )
       .get(desde, hasta) as { total: number }
 
-    const deuda = db.prepare('SELECT COALESCE(SUM(deuda_total), 0) AS total FROM fiados').get() as {
-      total: number
-    }
-
-    const inventario = db
-      .prepare(
-        'SELECT COALESCE(SUM(precio_venta * stock), 0) AS total FROM productos WHERE activo = 1'
-      )
-      .get() as { total: number }
-
     return {
       ventas: ventas.total,
       transacciones: ventas.transacciones,
       ticketPromedio:
         ventas.transacciones > 0 ? Math.round(ventas.total / ventas.transacciones) : 0,
       unidades: unidades.unidades,
-      fiado: fiado.total,
+      fiado: fiado.total
+    }
+  }
+
+  function resumen(desde: string, hasta: string): ResumenEstadisticas {
+    const actual = totales(desde, hasta)
+    const rangoAnterior = periodoAnterior(desde, hasta)
+    const anterior = totales(rangoAnterior.desde, rangoAnterior.hasta)
+
+    const deuda = db.prepare('SELECT COALESCE(SUM(deuda_total), 0) AS total FROM fiados').get() as {
+      total: number
+    }
+
+    const deudores = db
+      .prepare('SELECT COUNT(*) AS total FROM fiados WHERE deuda_total > 0')
+      .get() as { total: number }
+
+    const inventario = db
+      .prepare(
+        'SELECT COALESCE(SUM(precio_venta * stock), 0) AS total, COUNT(*) AS productos FROM productos WHERE activo = 1'
+      )
+      .get() as { total: number; productos: number }
+
+    return {
+      ...actual,
       deudaTotal: deuda.total,
-      valorInventario: inventario.total
+      deudoresActivos: deudores.total,
+      valorInventario: inventario.total,
+      productosActivos: inventario.productos,
+      anterior
     }
   }
 

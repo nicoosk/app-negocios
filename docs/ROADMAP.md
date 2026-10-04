@@ -47,6 +47,9 @@ interactivos** (Recharts) construidos sobre la data existente, con selector de p
 - Interactividad: tooltips oscuros, `Brush` en la serie temporal, toggle monto/unidades y click que
   abre un modal de detalle (día, producto o venta). La tarjeta de deuda abre el `ModalDeudores` que
   ya existía.
+- Tarjetas KPI reenfocadas a cruces útiles: ventas, ticket promedio, **ítems por venta**,
+  **tasa de fiado**, deuda total (con nº de deudores) e inventario (con nº de productos), todas con
+  **variación vs el período anterior** de igual duración.
 
 ### Arquitectura implementada
 
