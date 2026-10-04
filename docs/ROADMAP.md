@@ -93,6 +93,18 @@ locales → sync**.
   3. **Multi-local con sync en nube** (elegido a futuro): servidor + Postgres y sincronización;
      implica reescribir la capa de datos.
 
+## Siguiente iteración — Bitácora de auditoría (logs)
+
+Pedido del usuario: un sistema de logs **dentro de la app** para facilitar los procesos de auditoría.
+
+- Tabla `bitacora(id, fecha, hora, id_usuario, accion, entidad, id_entidad, detalle)` agregada en
+  `esquema.ts` (migración v5).
+- Se escribe desde el núcleo (`crearBitacora(db)`): alta/edición/baja de productos, ventas, fiados,
+  usuarios y sesión (apertura/cierre).
+- Lectura: `bitacora.listar(filtros)` + IPC `bitacora:listar` y una pantalla de solo lectura con
+  filtros por usuario, acción, entidad y rango de fechas.
+- A definir: retención (podado por antigüedad) y exportación a CSV.
+
 ## Archivos clave
 
 - `src/main/nucleo/nucleo.ts`, `src/main/nucleo/esquema.ts`, `src/main/nucleo/estadisticas.ts`.
