@@ -62,6 +62,14 @@ export function generarPaginaEscanner(): string {
     <script src="/vendor.js"></script>
     <script src="/zxing.js"></script>
     <script>
+      window.zbarPromesa = new Promise(function (resolver) { window.zbarListo = resolver; });
+    </script>
+    <script type="module">
+      import * as zbar from '/zbar.mjs';
+      window.zbarWasm = zbar;
+      window.zbarListo(zbar);
+    </script>
+    <script>
       var token = new URLSearchParams(location.search).get('t') || '';
       var estado = document.getElementById('estado');
       var bloqueado = false;
@@ -249,10 +257,48 @@ export function generarPaginaEscanner(): string {
         throw ultimoError || new Error('sin coincidencias');
       }
 
+      function esperarConTimeout(promesa, ms) {
+        return Promise.race([
+          promesa,
+          new Promise(function (resolver) { setTimeout(function () { resolver(null); }, ms); })
+        ]);
+      }
+
+      async function decodificarConZBar(canvas, zbar) {
+        var imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+        var angulos = [0, 90];
+        for (var a = 0; a < angulos.length; a++) {
+          var datos = imageData;
+          if (angulos[a] !== 0) {
+            var lienzo = rotar(canvas, angulos[a]);
+            datos = lienzo.getContext('2d').getImageData(0, 0, lienzo.width, lienzo.height);
+          }
+          var simbolos = await zbar.scanImageData(datos);
+          addLog('zbar (ángulo ' + angulos[a] + '): ' + simbolos.length + ' símbolo(s)');
+          if (simbolos.length) {
+            simbolos.forEach(function (s) { addLog('zbar: ' + s.typeName + ' = ' + s.decode()); });
+            return simbolos[0].decode();
+          }
+        }
+        return null;
+      }
+
       async function decodificarFoto(file) {
         var canvas = await fotoACanvas(file, 1600);
+        var zbar = await esperarConTimeout(window.zbarPromesa, 5000);
+        if (zbar && zbar.scanImageData) {
+          try {
+            addLog('decodificando con ZBar…');
+            var porZbar = await decodificarConZBar(canvas, zbar);
+            if (porZbar) return porZbar;
+            addLog('zbar no encontró nada, probando ZXing…');
+          } catch (e) {
+            addLog('zbar falló: ' + describir(e));
+          }
+        } else {
+          addLog('zbar no disponible, probando ZXing…');
+        }
         if (typeof ZXing !== 'undefined') {
-          addLog('decodificando con ZXing (TRY_HARDER + rotaciones)…');
           return decodificarConZXing(canvas);
         }
         addLog('ZXing no disponible, usando html5-qrcode');
