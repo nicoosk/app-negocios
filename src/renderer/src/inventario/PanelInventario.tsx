@@ -54,6 +54,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
   const [error, setError] = useState('')
   const [resolviendo, setResolviendo] = useState<Producto | null>(null)
   const [soloPendientes, setSoloPendientes] = useState(false)
+  const [codigoEscaneado, setCodigoEscaneado] = useState(false)
 
   const { abrirModal, pendientes, refrescarPendientes, registrarManejador } = useEscaner()
 
@@ -68,20 +69,41 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
     void cargar()
   }, [])
 
-  const procesarCodigo = useCallback(async (codigo: string): Promise<void> => {
-    const res = await window.api.productos.escanear(codigo)
-    if (!res.ok || !res.producto) return
-    if (res.producto.es_nuevo === 1) {
-      setResolviendo(res.producto)
-      return
-    }
-    setBusqueda(codigo)
-  }, [])
+  const procesarCodigo = useCallback(
+    async (codigo: string): Promise<void> => {
+      // Con el formulario de producto abierto el escaneo solo completa el código de barra,
+      // para no disparar la búsqueda ni crear productos pendientes.
+      if (modalAbierto) {
+        const valor = codigo.trim()
+        if (!valor) return
+        setForm((f) => ({ ...f, codigo_barra: valor }))
+        setError('')
+        setCodigoEscaneado(true)
+        return
+      }
+      const res = await window.api.productos.escanear(codigo)
+      if (!res.ok || !res.producto) return
+      if (res.producto.es_nuevo === 1) {
+        setResolviendo(res.producto)
+        return
+      }
+      setBusqueda(codigo)
+    },
+    [modalAbierto]
+  )
 
   useEffect(
     () => registrarManejador((codigo) => void procesarCodigo(codigo)),
     [registrarManejador, procesarCodigo]
   )
+
+  // El resaltado del campo avisa que el escaneo se aplicó, aunque el usuario
+  // esté mirando otro input del formulario.
+  useEffect(() => {
+    if (!codigoEscaneado) return
+    const timer = setTimeout(() => setCodigoEscaneado(false), 1500)
+    return () => clearTimeout(timer)
+  }, [codigoEscaneado])
 
   const abrirCrear = (): void => {
     setEditando(null)
@@ -300,7 +322,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
             <div className={styles.field}>
               <label>Código de barra</label>
               <input
-                className={styles.input}
+                className={`${styles.input} ${codigoEscaneado ? styles.inputResaltada : ''}`}
                 value={form.codigo_barra}
                 onChange={(e) => {
                   setError('')
