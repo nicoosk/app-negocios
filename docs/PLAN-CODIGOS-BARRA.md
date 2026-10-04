@@ -103,14 +103,14 @@ Cambios:
 - [ ] PR final dev → main (avisar a `nicoosk` para revisar)
 
 ### Nota de implementación (cámara en la red local)
-Los navegadores móviles solo exponen `getUserMedia` en contextos seguros: `http://<ip-lan>` **no**
-es seguro, por lo que la cámara en vivo falla en el celular. Para no depender de HTTPS con
-certificado autofirmado, la página móvil ofrece tres caminos: cámara en vivo (si el contexto es
-seguro), **"Tomar foto del código"** (input `capture` + `Html5Qrcode.scanFile`, funciona sobre HTTP)
-y entrada manual. La captura por foto es el camino garantizado.
+Los navegadores móviles solo exponen `getUserMedia` en contextos seguros. Por eso el servidor se
+sirve por **HTTPS con certificado autofirmado** (`src/main/scanner/certificado.ts`, generado con
+`selfsigned` y persistido en `userData`). Tras aceptar el aviso del navegador (o instalar el
+certificado en `/certificado.crt`), la cámara en vivo funciona. La página también ofrece
+**"Tomar foto del código"** (ZBar wasm + respaldo ZXing) y entrada manual como caminos garantizados.
 
 ## Verificación final
 - `pnpm typecheck` ✅
 - `pnpm lint` ✅
-- Tests Electron-as-node: 37/37 ✅ (incluye `servidor.test.ts`)
+- Tests Electron-as-node: 44/44 ✅ (incluye `servidor.test.ts` y `certificado.test.ts`)
 - `npx electron-vite build` ✅

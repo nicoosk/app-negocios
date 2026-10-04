@@ -10,8 +10,12 @@ La app incluye un escáner de códigos de barra por celular. Desde el Panel de v
 se abre el modal **Conectar escáner**, que muestra un QR con la URL del servidor local. El celular
 (misma red Wi-Fi que el PC) abre esa página, escanea el código y este llega al PC en tiempo real.
 
-- La cámara en vivo del navegador requiere un contexto seguro (HTTPS). Sobre HTTP en la red local
-  la app ofrece **"Tomar foto del código"** y entrada manual como alternativas garantizadas.
+- El servidor local se sirve por **HTTPS con certificado autofirmado** (generado y persistido en el
+  PC), porque la cámara en vivo (`getUserMedia`) solo funciona en contexto seguro. La primera vez el
+  celular avisa que la conexión no es segura: hay que aceptar el aviso ("Mostrar detalles" → "Visitar
+  este sitio") o instalar el certificado desde el enlace de la propia página (`/certificado.crt`).
+- La lectura de la foto usa **ZBar (WebAssembly)** como decodificador 1D principal (rápido y fiable
+  con EAN/UPC/Code128) y **ZXing** como respaldo. También hay entrada manual de código.
 - Si el código no existe, se crea un producto **pendiente** (`es_nuevo = 1`) sin nombre ni precio.
   El badge del Sidebar y del Inventario muestra cuántos hay por completar.
 - Al guardar un precio mayor a 0, el producto deja de ser pendiente y queda disponible para vender.

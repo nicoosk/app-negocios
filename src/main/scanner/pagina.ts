@@ -52,7 +52,7 @@ export function generarPaginaEscanner(): string {
       <input id="manual" inputmode="numeric" autocomplete="off" placeholder="O escribe el código" />
       <button id="enviarManual">Enviar</button>
     </div>
-    <p class="ayuda">La cámara en vivo necesita una conexión segura (HTTPS). Si no aparece, usa "Tomar foto del código" o escríbelo a mano.</p>
+    <p class="ayuda" id="ayuda">Si el navegador avisa que la conexión no es segura (el certificado es propio del PC), toca "Mostrar detalles" y luego "Visitar este sitio". Para no verlo de nuevo, <a href="/certificado.crt">instala el certificado</a>. Si la cámara en vivo no aparece, usa "Tomar foto del código" o escríbelo a mano.</p>
 
     <details id="debug">
       <summary>Registro técnico (toca para ver)</summary>
