@@ -18,6 +18,7 @@ export interface OpcionesServidor {
   obtenerIp: () => string | null
   generarPagina: (token: string) => string
   vendorJs: string
+  zxingJs: string
   puertoPreferido?: number
 }
 
@@ -30,7 +31,7 @@ export interface ServidorEscanner {
 const LIMITE_CUERPO = 64 * 1024
 
 export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscanner {
-  const { onCodigo, obtenerIp, generarPagina, vendorJs, puertoPreferido = 8787 } = opciones
+  const { onCodigo, obtenerIp, generarPagina, vendorJs, zxingJs, puertoPreferido = 8787 } = opciones
 
   let server: Server | null = null
   let token: string | null = null
@@ -87,6 +88,11 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
 
     if (req.method === 'GET' && url.pathname === '/vendor.js') {
       responder(res, 200, vendorJs, 'application/javascript; charset=utf-8')
+      return
+    }
+
+    if (req.method === 'GET' && url.pathname === '/zxing.js') {
+      responder(res, 200, zxingJs, 'application/javascript; charset=utf-8')
       return
     }
 
