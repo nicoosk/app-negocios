@@ -144,6 +144,20 @@ function migraciones(db: DatabaseType): Migracion[] {
           console.log("[db] v3: columna 'es_nuevo' agregada a productos")
         }
       }
+    },
+    {
+      version: 4,
+      descripcion: 'Índices para las consultas agregadas del dashboard',
+      up: () => {
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_ventas_fecha ON ventas(fecha);
+          CREATE INDEX IF NOT EXISTS idx_ventas_usuario ON ventas(id_usuario);
+          CREATE INDEX IF NOT EXISTS idx_ventas_detalle_venta ON ventas_detalle(venta_id);
+          CREATE INDEX IF NOT EXISTS idx_ventas_detalle_producto ON ventas_detalle(producto_id);
+          CREATE INDEX IF NOT EXISTS idx_fiados_detalle_fecha ON fiados_detalle(fecha);
+          CREATE INDEX IF NOT EXISTS idx_fiados_detalle_items_detalle ON fiados_detalle_items(detalle_id);
+        `)
+      }
     }
   ]
 }

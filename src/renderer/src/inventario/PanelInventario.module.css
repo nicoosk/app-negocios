@@ -337,7 +337,7 @@
   color: #e8e8e8;
   font-size: 0.88rem;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   width: 100%;
   box-sizing: border-box;
 }
@@ -345,6 +345,12 @@
 .input:focus,
 .select:focus {
   border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Se enciende al autocompletar el código escaneado. */
+.inputResaltada {
+  border-color: rgba(74, 222, 128, 0.7);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.18);
 }
 
 .input::placeholder {

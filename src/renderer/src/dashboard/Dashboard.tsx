@@ -3,17 +3,46 @@ import styles from './Dashboard.module.css'
 import ModalDeudores from '@renderer/fiados/ModalDeudores'
 import { LayoutDashboard } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-import type { FiadoHoy, ResumenFiado, VentaHoy } from '@shared/tipos'
+import { fechaLocal, haceDias } from '@renderer/utils/fechas'
+import type { PanelEstadisticas } from '@shared/tipos'
+import SelectorPeriodo, { type Periodo } from './SelectorPeriodo'
+import PanelGrafico from './PanelGrafico'
+import ModalDetallePunto, { type FilaDetalle } from './ModalDetallePunto'
+import GraficoVentasTiempo from './graficos/GraficoVentasTiempo'
+import GraficoVentasHora from './graficos/GraficoVentasHora'
+import GraficoTopProductos, { type MetricaProducto } from './graficos/GraficoTopProductos'
+import GraficoMixProductos from './graficos/GraficoMixProductos'
+import GraficoPorUsuario from './graficos/GraficoPorUsuario'
+import GraficoDispersion from './graficos/GraficoDispersion'
+import GraficoEstadoFiados from './graficos/GraficoEstadoFiados'
+
+// Compara la métrica con el período anterior de igual duración.
+function Delta({ actual, anterior }: { actual: number; anterior: number }): JSX.Element {
+  if (anterior === 0) {
+    return (
+      <span className={`${styles.delta} ${styles.deltaNeutro}`}>
+        {actual === 0 ? 'sin movimientos' : 'nuevo vs anterior'}
+      </span>
+    )
+  }
+  const cambio = Math.round(((actual - anterior) / anterior) * 100)
+  const clase = cambio > 0 ? styles.deltaPos : cambio < 0 ? styles.deltaNeg : styles.deltaNeutro
+  return (
+    <span className={`${styles.delta} ${clase}`}>
+      {cambio > 0 ? '+' : ''}
+      {cambio}% vs período anterior
+    </span>
+  )
+}
 
 export default function Dashboard(): JSX.Element {
-  const [totalVentas, setTotalVentas] = useState(0)
-  const [countVentas, setCountVentas] = useState(0)
-  const [ventas, setVentas] = useState<VentaHoy[]>([])
-  const [totalFiosHoy, setTotalFiosHoy] = useState(0)
-  const [fios, setFios] = useState<FiadoHoy[]>([])
-  const [deudores, setDeudores] = useState<ResumenFiado[]>([])
-  const [totalDeuda, setTotalDeuda] = useState(0)
-  const [modalDeudores, setModalDeudores] = useState<boolean>(false)
+  const [periodo, setPeriodo] = useState<Periodo>('hoy')
+  const [desdeCustom, setDesdeCustom] = useState(haceDias(29))
+  const [hastaCustom, setHastaCustom] = useState(fechaLocal())
+  const [panel, setPanel] = useState<PanelEstadisticas | null>(null)
+  const [metricaTop, setMetricaTop] = useState<MetricaProducto>('monto')
+  const [modalDeudores, setModalDeudores] = useState(false)
+  const [detalle, setDetalle] = useState<{ titulo: string; filas: FilaDetalle[] } | null>(null)
 
   const fecha = new Date().toLocaleDateString('es-CL', {
     weekday: 'long',
@@ -22,26 +51,39 @@ export default function Dashboard(): JSX.Element {
   })
 
   useEffect(() => {
+    let activo = true
+    const desde =
+      periodo === 'hoy'
+        ? fechaLocal()
+        : periodo === '7d'
+          ? haceDias(6)
+          : periodo === '30d'
+            ? haceDias(29)
+            : desdeCustom
+    const hasta = periodo === 'personalizado' ? hastaCustom : fechaLocal()
+
     const cargar = async (): Promise<void> => {
-      const [dataVentas, dataFios, dataDeudores] = await Promise.all([
-        window.api.ventas.hoy(),
-        window.api.fiados.hoy(),
-        window.api.fiados.todos()
-      ])
-
-      setTotalVentas(dataVentas.total)
-      setCountVentas(dataVentas.count)
-      setVentas(dataVentas.ventas)
-      setTotalFiosHoy(dataFios.total)
-      setFios(dataFios.fiados)
-      setDeudores(dataDeudores)
-      setTotalDeuda(dataDeudores.reduce((s, d) => s + d.deuda_total, 0))
+      const data = await window.api.estadisticas.panel(desde, hasta)
+      if (activo) setPanel(data)
     }
-
     cargar()
-  }, [])
 
-  const deudoresActivos = deudores.filter((d) => d.deuda_total > 0)
+    return () => {
+      activo = false
+    }
+  }, [periodo, desdeCustom, hastaCustom])
+
+  const abrirDetalle = (titulo: string, filas: FilaDetalle[]): void => setDetalle({ titulo, filas })
+
+  const resumen = panel?.resumen
+  const anterior = resumen?.anterior
+  const transacciones = resumen?.transacciones ?? 0
+  const unidades = resumen?.unidades ?? 0
+  const itemsPorVenta = transacciones > 0 ? unidades / transacciones : 0
+  const itemsPorVentaAnterior =
+    anterior && anterior.transacciones > 0 ? anterior.unidades / anterior.transacciones : 0
+  const tasaFiado = resumen && resumen.ventas > 0 ? resumen.fiado / resumen.ventas : 0
+  const tasaFiadoAnterior = anterior && anterior.ventas > 0 ? anterior.fiado / anterior.ventas : 0
 
   return (
     <div className={styles.pagina}>
@@ -51,19 +93,43 @@ export default function Dashboard(): JSX.Element {
           <h1 className={styles.titulo}>Dashboard</h1>
         </div>
         <span className={styles.fecha}>{fecha}</span>
+        <SelectorPeriodo
+          periodo={periodo}
+          desde={desdeCustom}
+          hasta={hastaCustom}
+          onPeriodo={setPeriodo}
+          onDesde={setDesdeCustom}
+          onHasta={setHastaCustom}
+        />
       </div>
 
       <div className={styles.statsGrid}>
         <div className={`${styles.statCard} ${styles.green}`}>
-          <span className={styles.statLabel}>VENTAS HOY</span>
-          <span className={styles.statValor}>{fmt(totalVentas)}</span>
-          <span className={styles.statSub}>{countVentas} transacciones</span>
+          <span className={styles.statLabel}>VENTAS</span>
+          <span className={styles.statValor}>{fmt(resumen?.ventas ?? 0)}</span>
+          <span className={styles.statSub}>{transacciones} transacciones</span>
+          <Delta actual={resumen?.ventas ?? 0} anterior={anterior?.ventas ?? 0} />
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>TICKET PROMEDIO</span>
+          <span className={styles.statValor}>{fmt(resumen?.ticketPromedio ?? 0)}</span>
+          <span className={styles.statSub}>promedio por venta</span>
+          <Delta actual={resumen?.ticketPromedio ?? 0} anterior={anterior?.ticketPromedio ?? 0} />
+        </div>
+
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>ÍTEMS POR VENTA</span>
+          <span className={styles.statValor}>{itemsPorVenta.toFixed(1)}</span>
+          <span className={styles.statSub}>{unidades} unidades vendidas</span>
+          <Delta actual={itemsPorVenta} anterior={itemsPorVentaAnterior} />
         </div>
 
         <div className={`${styles.statCard} ${styles.purple}`}>
-          <span className={styles.statLabel}>FIADO HOY</span>
-          <span className={styles.statValor}>{fmt(totalFiosHoy)}</span>
-          <span className={styles.statSub}>{fios.length} fíos registrados</span>
+          <span className={styles.statLabel}>TASA DE FIADO</span>
+          <span className={styles.statValor}>{Math.round(tasaFiado * 100)}%</span>
+          <span className={styles.statSub}>{fmt(resumen?.fiado ?? 0)} fiado en el período</span>
+          <Delta actual={tasaFiado} anterior={tasaFiadoAnterior} />
         </div>
 
         <div
@@ -71,91 +137,87 @@ export default function Dashboard(): JSX.Element {
           onClick={() => setModalDeudores(true)}
         >
           <span className={styles.statLabel}>DEUDA TOTAL</span>
-          <span className={styles.statValor}>{fmt(totalDeuda)}</span>
-          <span className={styles.statSub}>
-            {deudoresActivos.length} deudor{deudoresActivos.length > 1 ? 'es' : ''} activo
-            {deudoresActivos.length > 1 ? 's' : ''}
-          </span>
+          <span className={styles.statValor}>{fmt(resumen?.deudaTotal ?? 0)}</span>
+          <span className={styles.statSub}>{resumen?.deudoresActivos ?? 0} deudores con saldo</span>
         </div>
 
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>PROMEDIO VENDIDO</span>
-          <span className={styles.statValor}>
-            {countVentas > 0 ? fmt(Math.round(totalVentas / countVentas)) : '$0'}
-          </span>
-          <span className={styles.statSub}>promedio por venta</span>
+          <span className={styles.statLabel}>INVENTARIO</span>
+          <span className={styles.statValor}>{fmt(resumen?.valorInventario ?? 0)}</span>
+          <span className={styles.statSub}>{resumen?.productosActivos ?? 0} productos activos</span>
         </div>
       </div>
 
-      <div className={styles.grids}>
-        <div className={styles.bloque}>
-          <span className={styles.bloqueLabel}>ÚLTIMAS VENTAS DE HOY</span>
-          <div className={styles.row}>
-            {ventas.length === 0 ? (
-              <span className={styles.empty}>Sin ventas aún hoy</span>
-            ) : (
-              ventas.slice(0, 6).map((v, i) => (
-                <div key={i} className={styles.metaInfo}>
-                  <span className={styles.hora}>{v.hora.slice(0, 5)}</span>
-                  <div className={styles.rowItems}>
-                    {v.items.length > 0 ? (
-                      <span>
-                        {v.items
-                          .map((it) =>
-                            it.cantidad > 1
-                              ? `${it.nombre_producto} ×${it.cantidad}`
-                              : it.nombre_producto
-                          )
-                          .join(' · ')}
-                      </span>
-                    ) : (
-                      <span className={styles.rowEmpty}>No hay items asociados</span>
-                    )}
-                  </div>
-                  <span className={`${styles.rowMonto} ${styles.green}`}>{fmt(v.monto)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      {panel ? (
+        <div className={styles.chartsGrid}>
+          <PanelGrafico titulo="VENTAS EN EL TIEMPO" ancho>
+            <GraficoVentasTiempo data={panel.porDia} onDetalle={abrirDetalle} />
+          </PanelGrafico>
 
-        <div className={styles.bloque}>
-          <span className={styles.bloqueLabel}>FÍOS DE HOY</span>
-          <div className={styles.lista}>
-            {fios.length === 0 ? (
-              <span className={styles.empty}>Sin fíos hoy</span>
-            ) : (
-              fios.slice(0, 8).map((f, i) => (
-                <div key={i} className={styles.filaFio}>
-                  <div className={styles.fioLeft}>
-                    <span className={styles.hora}>{f.hora.slice(0, 5)}</span>
-                    <span className={styles.nombre}>{f.nombre}</span>
-                  </div>
-                  <span className={`${styles.monto} ${styles.purple}`}>{fmt(f.monto)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+          <PanelGrafico titulo="VENTAS POR HORA">
+            <GraficoVentasHora data={panel.porHora} />
+          </PanelGrafico>
 
-        <div className={styles.bloque}>
-          <span className={styles.bloqueLabel}>DEUDORES CON SALDO</span>
-          <div className={styles.lista}>
-            {deudoresActivos.length === 0 ? (
-              <span className={styles.empty}>Sin deudas pendientes</span>
-            ) : (
-              deudoresActivos.slice(0, 8).map((d) => (
-                <div key={d.id} className={styles.filaDeudor}>
-                  <span className={styles.nombre}>{d.nombre}</span>
-                  <span className={`${styles.monto} ${styles.red}`}>{fmt(d.deuda_total)}</span>
-                </div>
-              ))
-            )}
-          </div>
+          <PanelGrafico titulo="VENTAS POR USUARIO">
+            <GraficoPorUsuario data={panel.porUsuario} />
+          </PanelGrafico>
+
+          <PanelGrafico
+            titulo="TOP PRODUCTOS"
+            acciones={
+              <div className={styles.panelAcciones}>
+                <button
+                  className={`${styles.toggleBoton} ${
+                    metricaTop === 'monto' ? styles.toggleBotonActivo : ''
+                  }`}
+                  onClick={() => setMetricaTop('monto')}
+                >
+                  Monto
+                </button>
+                <button
+                  className={`${styles.toggleBoton} ${
+                    metricaTop === 'unidades' ? styles.toggleBotonActivo : ''
+                  }`}
+                  onClick={() => setMetricaTop('unidades')}
+                >
+                  Unidades
+                </button>
+              </div>
+            }
+          >
+            <GraficoTopProductos
+              data={metricaTop === 'monto' ? panel.topPorMonto : panel.topPorUnidades}
+              metrica={metricaTop}
+              onDetalle={abrirDetalle}
+            />
+          </PanelGrafico>
+
+          <PanelGrafico titulo="MIX DE PRODUCTOS">
+            <GraficoMixProductos items={panel.mix} total={panel.mixTotal} />
+          </PanelGrafico>
+
+          <PanelGrafico titulo="DISPERSIÓN MONTO × HORA" ancho>
+            <GraficoDispersion data={panel.dispersion} onDetalle={abrirDetalle} />
+          </PanelGrafico>
+
+          <PanelGrafico titulo="ESTADO DE FIADOS" ancho>
+            <GraficoEstadoFiados estado={panel.estadoFiados} />
+          </PanelGrafico>
         </div>
-      </div>
+      ) : (
+        <div className={styles.panel}>
+          <span className={styles.empty}>Cargando estadísticas…</span>
+        </div>
+      )}
 
       {modalDeudores && <ModalDeudores onClose={() => setModalDeudores(false)} />}
+      {detalle && (
+        <ModalDetallePunto
+          titulo={detalle.titulo}
+          filas={detalle.filas}
+          onClose={() => setDetalle(null)}
+        />
+      )}
     </div>
   )
 }

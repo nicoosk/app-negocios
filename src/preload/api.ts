@@ -5,6 +5,7 @@ import type {
   FiadoHoy,
   HistorialFiado,
   LineaCarrito,
+  PanelEstadisticas,
   Producto,
   RegistroAuditoria,
   ResumenFiado,
@@ -109,6 +110,9 @@ export interface Api {
     detener: () => Promise<EstadoEscaner>
     onCodigo: (cb: (codigo: string) => void) => () => void
   }
+  estadisticas: {
+    panel: (desde: string, hasta: string) => Promise<PanelEstadisticas | null>
+  }
 }
 
 // Puente seguro: única superficie que el renderer ve como `window.api`.
@@ -204,6 +208,9 @@ const api: Api = {
       ipcRenderer.on('scanner:codigo', handler)
       return () => ipcRenderer.removeListener('scanner:codigo', handler)
     }
+  },
+  estadisticas: {
+    panel: (desde, hasta) => ipcRenderer.invoke('estadisticas:panel', desde, hasta)
   }
 }
 
