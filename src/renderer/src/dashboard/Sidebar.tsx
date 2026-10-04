@@ -1,11 +1,13 @@
 import { JSX, SetStateAction } from 'react'
 import styles from './Sidebar.module.css'
 import UpdaterBanner from './UpdateBanner'
+import { useEscaner } from '../escaner/contexto'
 import {
   LayoutDashboard,
   LogOut,
   LucideIcon,
   Package,
+  ScanLine,
   Settings,
   Settings2,
   ShoppingCart,
@@ -45,10 +47,11 @@ const ADMIN_ITEMS: NavItem[] = [
 interface NavButtonProps {
   item: NavItem
   activo: boolean
+  contador?: number
   onNavegar: React.Dispatch<SetStateAction<PaginaActiva>>
 }
 
-function NavButton({ item, activo, onNavegar }: NavButtonProps): JSX.Element {
+function NavButton({ item, activo, contador, onNavegar }: NavButtonProps): JSX.Element {
   const clases = [
     styles.navItem,
     activo ? styles.activo : '',
@@ -68,6 +71,11 @@ function NavButton({ item, activo, onNavegar }: NavButtonProps): JSX.Element {
       >
         <Icono className={styles.navIcono} />
         <span className={styles.navLabel}>{item.label}</span>
+        {contador && contador > 0 ? (
+          <span className={styles.contador} title={`${contador} productos pendientes`}>
+            {contador}
+          </span>
+        ) : null}
         {item.proximamente && <span className={styles.badge}>Próximamente</span>}
         {item.beta && <span className={styles.badge}>Beta</span>}
       </button>
@@ -81,6 +89,8 @@ export default function Sidebar({
   onNavegar,
   onLogout
 }: SidebarProps): JSX.Element {
+  const { pendientes, abrirModal } = useEscaner()
+
   return (
     <div className={styles.sidebar}>
       <div className={styles.logo}>
@@ -94,6 +104,7 @@ export default function Sidebar({
             key={item.id}
             item={item}
             activo={paginaActiva === item.id}
+            contador={item.id === 'inventario' ? pendientes : undefined}
             onNavegar={onNavegar}
           />
         ))}
@@ -116,6 +127,10 @@ export default function Sidebar({
 
       <div className={styles.footer}>
         <UpdaterBanner onSidebar={true} />
+        <button className={styles.btnEscaner} onClick={abrirModal}>
+          <ScanLine className={styles.navIcono} />
+          <span className={styles.navLabel}>Conectar escáner</span>
+        </button>
         <button className={styles.btnLogout} onClick={onLogout}>
           <LogOut className={styles.navIcono} />
           <span className={styles.navLabel}>Cerrar sesión</span>

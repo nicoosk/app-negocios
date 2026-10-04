@@ -1,10 +1,3 @@
-export interface Producto {
-  id: number
-  nombre: string
-  precio_venta: number
-  stock: number
-}
-
 export interface ItemCarrito {
   producto_id: number | null
   nombre: string
@@ -13,10 +6,4 @@ export interface ItemCarrito {
   precio_modificado: boolean
   cantidad: number
   subtotal: number
-}
-
-export interface Fiado {
-  id: number
-  nombre: string
-  deuda_total: number
 }

@@ -1,10 +1,13 @@
-import { JSX, useEffect, useRef, useState } from 'react'
+import { JSX, useCallback, useEffect, useRef, useState } from 'react'
 import styles from './TabVentas.module.css'
-import { Plus, Search, ShoppingBag } from 'lucide-react'
+import { Plus, ScanLine, Search, ShoppingBag } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-import { Fiado, ItemCarrito, Producto } from './types'
+import type { Producto, ResumenFiado } from '@shared/tipos'
+import { ItemCarrito } from './types'
 import CartItem from './ItemCarrito'
 import { similar } from '@renderer/utils/search'
+import { useEscaner } from '../escaner/contexto'
+import ModalResolverProducto from '../escaner/ModalResolverProducto'
 
 interface TabVentasProps {
   onVentaRegistrada: () => void
@@ -24,11 +27,14 @@ export default function TabVentas({
   const [libreNombre, setLibreNombre] = useState('')
   const [libreMonto, setLibreMonto] = useState('')
   const [registrando, setRegistrando] = useState(false)
+  const [pendiente, setPendiente] = useState<Producto | null>(null)
+
+  const { abrirModal, registrarManejador, refrescarPendientes } = useEscaner()
 
   const [modalFio, setModalFio] = useState(false)
   const [nombreFio, setNombreFio] = useState('')
-  const [todosDeudores, setTodosDeudores] = useState<Fiado[]>([])
-  const [sugerenciasFio, setSugerenciasFio] = useState<Fiado[]>([])
+  const [todosDeudores, setTodosDeudores] = useState<ResumenFiado[]>([])
+  const [sugerenciasFio, setSugerenciasFio] = useState<ResumenFiado[]>([])
   const [seleccionadoFio, setSeleccionadoFio] = useState<{
     nombre: string
     deuda_total: number
@@ -80,7 +86,7 @@ export default function TabVentas({
 
   // ─── Handlers del carrito ───────────────────────────────────────────────────
 
-  const agregarProducto = (p: Producto): void => {
+  const agregarProducto = useCallback((p: Producto): void => {
     setCarrito((prev) => {
       const idx = prev.findIndex((it) => it.producto_id === p.id)
       if (idx !== -1) {
@@ -106,7 +112,25 @@ export default function TabVentas({
     setBusqueda('')
     setResultados([])
     searchRef.current?.focus()
-  }
+  }, [])
+
+  const procesarCodigo = useCallback(
+    async (codigo: string): Promise<void> => {
+      const res = await window.api.productos.escanear(codigo)
+      if (!res.ok || !res.producto) return
+      if (res.producto.es_nuevo === 1) {
+        setPendiente(res.producto)
+        return
+      }
+      agregarProducto(res.producto)
+    },
+    [agregarProducto]
+  )
+
+  useEffect(
+    () => registrarManejador((codigo) => void procesarCodigo(codigo)),
+    [registrarManejador, procesarCodigo]
+  )
 
   const cambiarCantidad = (idx: number, delta: number): void => {
     setCarrito((prev) => {
@@ -274,6 +298,13 @@ export default function TabVentas({
             </div>
           )}
         </div>
+        <button
+          className={styles.btnEscaner}
+          onClick={abrirModal}
+          title="Conectar escáner del celular"
+        >
+          <ScanLine size={15} />
+        </button>
         <button className={styles.btnLibre} onClick={() => setModalLibre(true)}>
           <Plus size={13} />
           Monto libre
@@ -477,6 +508,18 @@ export default function TabVentas({
             </div>
           </div>
         </div>
+      )}
+
+      {pendiente && (
+        <ModalResolverProducto
+          producto={pendiente}
+          onResuelto={(p) => {
+            setPendiente(null)
+            void refrescarPendientes()
+            agregarProducto(p)
+          }}
+          onCancelar={() => setPendiente(null)}
+        />
       )}
     </div>
   )

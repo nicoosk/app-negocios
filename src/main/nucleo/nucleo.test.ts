@@ -175,4 +175,26 @@ describe('códigos de barra', () => {
     nucleo.productos.crear('12345', null, 1000, 5, 'unidad')
     expect(nucleo.productos.buscarPorCodigoBarra('12345')).toBeUndefined()
   })
+
+  it('editar un pendiente con precio lo saca de nuevo', () => {
+    const { producto } = nucleo.productos.escanear('444')
+    expect(nucleo.productos.contarNuevos()).toBe(1)
+    nucleo.productos.actualizar(producto.id, 'Arroz', '444', 1200, 3, 'kg')
+    expect(nucleo.productos.buscarPorCodigoBarra('444')).toMatchObject({ es_nuevo: 0 })
+    expect(nucleo.productos.contarNuevos()).toBe(0)
+  })
+
+  it('editar un pendiente sin precio no lo saca de nuevo', () => {
+    const { producto } = nucleo.productos.escanear('555')
+    nucleo.productos.actualizar(producto.id, 'Sin precio', null, 0, 5, 'unidad')
+    expect(nucleo.productos.contarNuevos()).toBe(1)
+  })
+
+  it('el buscador de ventas no muestra productos pendientes', () => {
+    nucleo.productos.escanear('666')
+    nucleo.productos.crear('Galletas', null, 800, 4, 'unidad')
+    const resultados = nucleo.productos.buscarPorNombre('')
+    expect(resultados.some((p) => p.codigo_barra === '666')).toBe(false)
+    expect(resultados.some((p) => p.nombre === 'Galletas')).toBe(true)
+  })
 })

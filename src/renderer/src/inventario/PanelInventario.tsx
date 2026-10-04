@@ -1,18 +1,20 @@
-import { JSX, useEffect, useState } from 'react'
+import { JSX, useCallback, useEffect, useState } from 'react'
 import styles from './PanelInventario.module.css'
-import { Package, Pencil, Plus, Search, Trash2, TriangleAlert } from 'lucide-react'
+import {
+  Package,
+  PackagePlus,
+  Pencil,
+  Plus,
+  ScanLine,
+  Search,
+  Trash2,
+  TriangleAlert
+} from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-
-interface Producto {
-  id: number
-  nombre: string
-  codigo_barra: string | null
-  precio_venta: number
-  stock: number
-  unidad: string
-  activo: number
-  creado_en: string
-}
+import { UNIDADES } from '@shared/constantes'
+import type { Producto } from '@shared/tipos'
+import { useEscaner } from '../escaner/contexto'
+import ModalResolverProducto from '../escaner/ModalResolverProducto'
 
 interface FormState {
   nombre: string
@@ -22,7 +24,6 @@ interface FormState {
   unidad: string
 }
 
-const UNIDADES = ['unidad', 'gr', 'kg', 'ml', 'litro', 'docena']
 const UMBRAL_STOCK_BAJO = 5
 
 const formVacio = (): FormState => ({
@@ -30,7 +31,7 @@ const formVacio = (): FormState => ({
   codigo_barra: '',
   precio_venta: '',
   stock: '',
-  unidad: ''
+  unidad: 'unidad'
 })
 
 interface PanelInventarioProps {
@@ -51,18 +52,36 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
   const [confirmEliminar, setConfirmEliminar] = useState<number | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const [resolviendo, setResolviendo] = useState<Producto | null>(null)
+  const [soloPendientes, setSoloPendientes] = useState(false)
 
-  const cargarProductos = async (): Promise<void> => {
+  const { abrirModal, pendientes, refrescarPendientes, registrarManejador } = useEscaner()
+
+  const cargarProductos = useCallback(async (): Promise<void> => {
     setProductos(await consultarProductos())
-  }
+  }, [])
 
   useEffect(() => {
-    const carga = async (): Promise<void> => {
+    const cargar = async (): Promise<void> => {
       setProductos(await consultarProductos())
     }
-
-    void carga()
+    void cargar()
   }, [])
+
+  const procesarCodigo = useCallback(async (codigo: string): Promise<void> => {
+    const res = await window.api.productos.escanear(codigo)
+    if (!res.ok || !res.producto) return
+    if (res.producto.es_nuevo === 1) {
+      setResolviendo(res.producto)
+      return
+    }
+    setBusqueda(codigo)
+  }, [])
+
+  useEffect(
+    () => registrarManejador((codigo) => void procesarCodigo(codigo)),
+    [registrarManejador, procesarCodigo]
+  )
 
   const abrirCrear = (): void => {
     setEditando(null)
@@ -126,13 +145,15 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
     }
   }
 
-  const filtrados = productos.filter(
-    (p) =>
-      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (p.codigo_barra ?? '').includes(busqueda)
-  )
+  const filtrados = productos
+    .filter((p) => (soloPendientes ? p.es_nuevo === 1 : true))
+    .filter(
+      (p) =>
+        p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        (p.codigo_barra ?? '').includes(busqueda)
+    )
 
-  const stockBajo = productos.filter((p) => p.stock <= UMBRAL_STOCK_BAJO).length
+  const stockBajo = productos.filter((p) => p.stock <= UMBRAL_STOCK_BAJO && p.es_nuevo === 0).length
 
   return (
     <div className={styles.page}>
@@ -146,6 +167,12 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
               <span className={styles.alertaLabel}>{stockBajo} con stock bajo</span>
             </div>
           )}
+          {pendientes > 0 && (
+            <button className={styles.pendientesBadge} onClick={() => setSoloPendientes(true)}>
+              <PackagePlus size={14} />
+              <span>{pendientes} por completar</span>
+            </button>
+          )}
           <span className={styles.badge}>Beta</span>
         </div>
         <div className={styles.acciones}>
@@ -158,6 +185,16 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
+          <button
+            className={`${styles.togglePendientes} ${soloPendientes ? styles.toggleActivo : ''}`}
+            onClick={() => setSoloPendientes((v) => !v)}
+          >
+            <PackagePlus size={14} />
+            Pendientes{pendientes > 0 ? ` (${pendientes})` : ''}
+          </button>
+          <button className={styles.btnEscaner} onClick={abrirModal} title="Conectar escáner">
+            <ScanLine size={15} />
+          </button>
           <button className={styles.btnNuevo} onClick={abrirCrear}>
             <Plus size={16} />
             Nuevo producto
@@ -168,7 +205,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
       {filtrados.length === 0 ? (
         <div className={styles.empty}>
           {busqueda
-            ? 'Sin resultados para esa búsqueeda'
+            ? 'Sin resultados para esa búsqueda'
             : 'No hay productos aún. ¡Agrega el primero!'}
         </div>
       ) : (
@@ -187,7 +224,12 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
             <tbody>
               {filtrados.map((p) => (
                 <tr key={p.id} className={p.stock <= UMBRAL_STOCK_BAJO ? styles.rowLow : ''}>
-                  <td className={styles.tdNombre}>{p.nombre}</td>
+                  <td className={styles.tdNombre}>
+                    <span className={styles.nombreConTag}>
+                      {p.nombre}
+                      {p.es_nuevo === 1 && <span className={styles.tagPendiente}>Pendiente</span>}
+                    </span>
+                  </td>
                   <td className={styles.tdMono}>
                     {p.codigo_barra ?? <span className={styles.noData}>-</span>}
                   </td>
@@ -197,13 +239,23 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
                   >
                     <div className={styles.contentContainer}>
                       {p.stock}
-                      {p.stock <= UMBRAL_STOCK_BAJO && (
+                      {p.es_nuevo === 0 && p.stock <= UMBRAL_STOCK_BAJO && (
                         <TriangleAlert size={14} className={styles.icon} />
                       )}
                     </div>
                   </td>
                   <td className={styles.tdUnidad}>{p.unidad}</td>
                   <td className={styles.tdAcciones}>
+                    {p.es_nuevo === 1 ? (
+                      <button
+                        className={styles.btnCompletar}
+                        onClick={() => setResolviendo(p)}
+                        title="Completar datos"
+                      >
+                        <PackagePlus size={14} />
+                        Completar
+                      </button>
+                    ) : undefined}
                     <button
                       className={styles.btnEdit}
                       onClick={() => abrirEditar(p)}
@@ -246,10 +298,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
               />
             </div>
             <div className={styles.field}>
-              <div className={styles.labelWrapper}>
-                <label>Código de barra</label>
-                <span className={styles.badgeNoSoportado}>No soportado</span>
-              </div>
+              <label>Código de barra</label>
               <input
                 className={styles.input}
                 value={form.codigo_barra}
@@ -257,8 +306,7 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
                   setError('')
                   setForm((f) => ({ ...f, codigo_barra: e.target.value }))
                 }}
-                placeholder="No soportado aún"
-                disabled
+                placeholder="Opcional. Se autocompleta al escanear."
               />
             </div>
             <div className={styles.fieldRow}>
@@ -348,6 +396,19 @@ export default function PanelInventario({ isAdmin }: PanelInventarioProps): JSX.
             </div>
           </div>
         </div>
+      )}
+
+      {resolviendo && (
+        <ModalResolverProducto
+          producto={resolviendo}
+          onResuelto={(p) => {
+            setResolviendo(null)
+            void cargarProductos()
+            void refrescarPendientes()
+            setBusqueda(p.nombre)
+          }}
+          onCancelar={() => setResolviendo(null)}
+        />
       )}
     </div>
   )

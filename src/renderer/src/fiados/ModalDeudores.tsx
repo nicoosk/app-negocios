@@ -1,27 +1,15 @@
 import { JSX, useEffect, useState } from 'react'
 import styles from './ModalDeudores.module.css'
 import { ChevronDown } from 'lucide-react'
-
-interface Deudor {
-  id: number
-  nombre: string
-  deuda_total: number
-}
-
-interface Movimiento {
-  monto: number
-  fecha: string
-  hora: string
-}
+import { fmtAbs } from '@renderer/utils/formatter'
+import type { HistorialFiado, ResumenFiado } from '@shared/tipos'
 
 interface ModalDeudoresProps {
   onClose: () => void
   onAbono?: () => void
 }
 
-const fmt = (n: number): string => '$' + Math.abs(n).toLocaleString('es-CL')
-
-function calcularSaldos(historial: Movimiento[]): number[] {
+function calcularSaldos(historial: HistorialFiado[]): number[] {
   const rev = [...historial].reverse()
   let saldo = 0
   const saldos = rev.map((h) => {
@@ -32,10 +20,10 @@ function calcularSaldos(historial: Movimiento[]): number[] {
 }
 
 export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps): JSX.Element {
-  const [deudores, setDeudores] = useState<Deudor[]>([])
+  const [deudores, setDeudores] = useState<ResumenFiado[]>([])
   const [expandido, setExpandido] = useState<number | null>(null)
   const [abono, setAbono] = useState('')
-  const [historial, setHistorial] = useState<Movimiento[]>([])
+  const [historial, setHistorial] = useState<HistorialFiado[]>([])
   const [cargando, setCargando] = useState(false)
 
   useEffect(() => {
@@ -55,7 +43,7 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
     setHistorial(data)
   }
 
-  const handleAbonar = async (deudor: Deudor): Promise<void> => {
+  const handleAbonar = async (deudor: ResumenFiado): Promise<void> => {
     const monto = parseInt(abono)
     if (!monto || monto <= 0) return
     setCargando(true)
@@ -85,7 +73,7 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
         <div className={styles.header}>
           <h3>Deudores</h3>
           <div className={styles.headerRight}>
-            <span className={styles.totalLabel}>Total adeudado: {fmt(total)}</span>
+            <span className={styles.totalLabel}>Total adeudado: {fmtAbs(total)}</span>
             <button className={styles.btnClose} onClick={onClose}>
               ✕
             </button>
@@ -115,7 +103,7 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
                     <span className={styles.nombre}>{d.nombre}</span>
                     <div className={styles.rowRight}>
                       <span className={`${styles.deuda} ${saldado ? styles.saldado : ''}`}>
-                        {saldado ? 'Sin deuda' : fmt(d.deuda_total)}
+                        {saldado ? 'Sin deuda' : fmtAbs(d.deuda_total)}
                       </span>
                       <ChevronDown
                         className={`${styles.chevron} ${isExp ? styles.open : ''}`}
@@ -168,9 +156,9 @@ export default function ModalDeudores({ onClose, onAbono }: ModalDeudoresProps):
                                   className={`${styles.histMonto} ${h.monto > 0 ? styles.fio : styles.abonoTipo}`}
                                 >
                                   {h.monto > 0 ? '+' : '-'}
-                                  {fmt(h.monto)}
+                                  {fmtAbs(h.monto)}
                                 </span>
-                                <span className={styles.histSaldo}>Saldo: {fmt(saldos[i])}</span>
+                                <span className={styles.histSaldo}>Saldo: {fmtAbs(saldos[i])}</span>
                               </div>
                             </div>
                           ))

@@ -3,39 +3,15 @@ import styles from './Dashboard.module.css'
 import ModalDeudores from '@renderer/fiados/ModalDeudores'
 import { LayoutDashboard } from 'lucide-react'
 import { fmt } from '@renderer/utils/formatter'
-
-interface ItemVenta {
-  nombre_producto: string
-  cantidad: number
-  subtotal: number
-}
-
-interface Venta {
-  id: number
-  monto: number
-  hora: string
-  items: ItemVenta[]
-}
-
-interface Fio {
-  nombre: string
-  monto: number
-  hora: string
-}
-
-interface Deudor {
-  id: number
-  nombre: string
-  deuda_total: number
-}
+import type { FiadoHoy, ResumenFiado, VentaHoy } from '@shared/tipos'
 
 export default function Dashboard(): JSX.Element {
   const [totalVentas, setTotalVentas] = useState(0)
   const [countVentas, setCountVentas] = useState(0)
-  const [ventas, setVentas] = useState<Venta[]>([])
+  const [ventas, setVentas] = useState<VentaHoy[]>([])
   const [totalFiosHoy, setTotalFiosHoy] = useState(0)
-  const [fios, setFios] = useState<Fio[]>([])
-  const [deudores, setDeudores] = useState<Deudor[]>([])
+  const [fios, setFios] = useState<FiadoHoy[]>([])
+  const [deudores, setDeudores] = useState<ResumenFiado[]>([])
   const [totalDeuda, setTotalDeuda] = useState(0)
   const [modalDeudores, setModalDeudores] = useState<boolean>(false)
 
@@ -57,9 +33,9 @@ export default function Dashboard(): JSX.Element {
       setCountVentas(dataVentas.count)
       setVentas(dataVentas.ventas)
       setTotalFiosHoy(dataFios.total)
-      setFios(dataFios.fios)
+      setFios(dataFios.fiados)
       setDeudores(dataDeudores)
-      setTotalDeuda(dataDeudores.reduce((s: number, d: Deudor) => s + d.deuda_total, 0))
+      setTotalDeuda(dataDeudores.reduce((s, d) => s + d.deuda_total, 0))
     }
 
     cargar()
