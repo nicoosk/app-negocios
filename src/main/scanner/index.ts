@@ -1,8 +1,10 @@
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
+import { join } from 'path'
 import { toDataURL } from 'qrcode'
 import type { EstadoEscaner } from '../../shared/tipos'
 import { crearServidorEscanner, type ServidorEscanner } from './servidor'
 import { obtenerIpLan } from './red'
+import { obtenerCertificado } from './certificado'
 import { generarPaginaEscanner } from './pagina'
 import html5QrcodeJs from '../../../node_modules/html5-qrcode/html5-qrcode.min.js?raw'
 import zxingJs from '../../../node_modules/html5-qrcode/third_party/zxing-js.umd.js?raw'
@@ -33,13 +35,19 @@ async function estadoPublico(): Promise<EstadoEscaner> {
 
 export async function iniciarEscaner(): Promise<EstadoEscaner> {
   if (!servidor) {
+    const ip = obtenerIpLan()
+    const tls = ip
+      ? await obtenerCertificado(join(app.getPath('userData'), 'scanner-tls.json'), ip)
+      : undefined
     servidor = crearServidorEscanner({
       onCodigo: (codigo) => ventanaPrincipal()?.webContents.send('scanner:codigo', codigo),
       obtenerIp: obtenerIpLan,
       generarPagina: generarPaginaEscanner,
       vendorJs: html5QrcodeJs,
       zxingJs,
-      zbarJs
+      zbarJs,
+      tls,
+      certPem: tls?.cert
     })
   }
   await servidor.iniciar()

@@ -1,8 +1,15 @@
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
+import {
+  createServer,
+  type IncomingMessage,
+  type Server as HttpServer,
+  type ServerResponse
+} from 'http'
+import { createServer as createHttpsServer, type Server as HttpsServer } from 'https'
 import type { AddressInfo } from 'net'
 import { randomBytes, timingSafeEqual } from 'crypto'
+import type { ParCertificado } from './certificado'
 
-// Servidor HTTP local que sirve la página de escaneo al celular y recibe los
+// Servidor HTTP(S) local que sirve la página de escaneo al celular y recibe los
 // códigos. Es HTTP nativo de Node: no depende de Electron, por lo que se puede
 // testear en aislamiento levantándolo en un puerto efímero (puerto 0).
 export interface EstadoServidor {
@@ -20,6 +27,8 @@ export interface OpcionesServidor {
   vendorJs: string
   zxingJs: string
   zbarJs: string
+  tls?: ParCertificado
+  certPem?: string
   puertoPreferido?: number
 }
 
@@ -39,22 +48,25 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
     vendorJs,
     zxingJs,
     zbarJs,
+    tls,
+    certPem,
     puertoPreferido = 8787
   } = opciones
 
-  let server: Server | null = null
+  let server: HttpServer | HttpsServer | null = null
   let token: string | null = null
   let puerto: number | null = null
   const clientes = new Set<ServerResponse>()
 
   function estado(): EstadoServidor {
     const ip = obtenerIp()
+    const esquema = tls ? 'https' : 'http'
     return {
       activo: server !== null,
       puerto,
       token,
       conectados: clientes.size,
-      url: ip && puerto && token ? `http://${ip}:${puerto}/?t=${token}` : null
+      url: ip && puerto && token ? `${esquema}://${ip}:${puerto}/?t=${token}` : null
     }
   }
 
@@ -110,6 +122,11 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
       return
     }
 
+    if (req.method === 'GET' && url.pathname === '/certificado.crt' && certPem) {
+      responder(res, 200, certPem, 'application/x-x509-ca-cert')
+      return
+    }
+
     if (req.method === 'GET' && url.pathname === '/estado') {
       responder(res, 200, JSON.stringify({ ok: true }))
       return
@@ -161,7 +178,7 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
 
   function escuchar(puertoEscucha: number): Promise<void> {
     return new Promise((resolve, reject) => {
-      const s = server as Server
+      const s = server as HttpServer | HttpsServer
       const onError = (err: NodeJS.ErrnoException): void => {
         s.off('listening', onListening)
         reject(err)
@@ -179,12 +196,15 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
   async function iniciar(): Promise<EstadoServidor> {
     if (server) return estado()
     token = randomBytes(16).toString('hex')
-    server = createServer((req, res) => {
+    const manejador = (req: IncomingMessage, res: ServerResponse): void => {
       void manejar(req, res).catch((err) => {
         console.error('[scanner] Error manejando petición:', err)
         if (!res.headersSent) responder(res, 500, JSON.stringify({ ok: false, error: 'Error' }))
       })
-    })
+    }
+    server = tls
+      ? createHttpsServer({ key: tls.key, cert: tls.cert }, manejador)
+      : createServer(manejador)
 
     try {
       await escuchar(puertoPreferido)
@@ -207,7 +227,7 @@ export function crearServidorEscanner(opciones: OpcionesServidor): ServidorEscan
     clientes.clear()
     if (server) {
       await new Promise<void>((resolve) => {
-        ;(server as Server).close(() => resolve())
+        ;(server as HttpServer | HttpsServer).close(() => resolve())
       })
       server = null
     }

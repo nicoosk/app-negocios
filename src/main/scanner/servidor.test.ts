@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { crearServidorEscanner, type ServidorEscanner } from './servidor'
+import https from 'https'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { crearServidorEscanner, type OpcionesServidor, type ServidorEscanner } from './servidor'
+import { obtenerCertificado, type ParCertificado } from './certificado'
 
-function crearServidorPrueba(overrides: Partial<{ puertoPreferido: number }> = {}): {
+function crearServidorPrueba(overrides: Partial<OpcionesServidor> = {}): {
   servidor: ServidorEscanner
   onCodigo: ReturnType<typeof vi.fn>
 } {
@@ -17,6 +21,17 @@ function crearServidorPrueba(overrides: Partial<{ puertoPreferido: number }> = {
     ...overrides
   })
   return { servidor, onCodigo }
+}
+
+let certificado: ParCertificado | null = null
+async function obtenerCertificadoPrueba(): Promise<ParCertificado> {
+  if (!certificado) {
+    certificado = await obtenerCertificado(
+      join(tmpdir(), `scanner-tls-${process.pid}.json`),
+      '192.168.1.10'
+    )
+  }
+  return certificado
 }
 
 let activo: ServidorEscanner | null = null
@@ -68,6 +83,45 @@ describe('servidor de escáner', () => {
     const res = await fetch(`http://127.0.0.1:${puerto}/zbar.mjs`)
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('/*zbar*/')
+  })
+
+  it('sirve el certificado cuando se provee', async () => {
+    const { servidor } = crearServidorPrueba({ certPem: 'CERT-PEM' })
+    activo = servidor
+    const { puerto } = await servidor.iniciar()
+    const res = await fetch(`http://127.0.0.1:${puerto}/certificado.crt`)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('CERT-PEM')
+  })
+
+  it('sirve por https cuando se provee un certificado', async () => {
+    const tls = await obtenerCertificadoPrueba()
+    const { servidor } = crearServidorPrueba({ tls, certPem: tls.cert })
+    activo = servidor
+    const estado = await servidor.iniciar()
+
+    expect(estado.url).toMatch(/^https:\/\/192\.168\.1\.10:\d+\/\?t=[a-f0-9]{32}$/)
+
+    const cuerpo = await new Promise<string>((resolve, reject) => {
+      https
+        .get(
+          {
+            host: '127.0.0.1',
+            port: estado.puerto as number,
+            path: '/',
+            rejectUnauthorized: false
+          },
+          (res) => {
+            let datos = ''
+            res.on('data', (trozo) => {
+              datos += trozo
+            })
+            res.on('end', () => resolve(datos))
+          }
+        )
+        .on('error', reject)
+    })
+    expect(cuerpo).toContain('<html>ok</html>')
   })
 
   it('rechaza un scan con token inválido y no emite el código', async () => {
