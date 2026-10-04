@@ -5,6 +5,7 @@ import { crearServidorEscanner, type ServidorEscanner } from './servidor'
 import { obtenerIpLan } from './red'
 import { generarPaginaEscanner } from './pagina'
 import html5QrcodeJs from '../../../node_modules/html5-qrcode/html5-qrcode.min.js?raw'
+import zxingJs from '../../../node_modules/html5-qrcode/third_party/zxing-js.umd.js?raw'
 
 // Servicio del escáner por celular: levanta el servidor HTTP local y reenvía los
 // códigos recibidos a la ventana. El QR de conexión se genera acá (proceso main).
@@ -35,7 +36,8 @@ export async function iniciarEscaner(): Promise<EstadoEscaner> {
       onCodigo: (codigo) => ventanaPrincipal()?.webContents.send('scanner:codigo', codigo),
       obtenerIp: obtenerIpLan,
       generarPagina: generarPaginaEscanner,
-      vendorJs: html5QrcodeJs
+      vendorJs: html5QrcodeJs,
+      zxingJs
     })
   }
   await servidor.iniciar()

@@ -11,6 +11,7 @@ function crearServidorPrueba(overrides: Partial<{ puertoPreferido: number }> = {
     obtenerIp: () => '192.168.1.10',
     generarPagina: () => '<html>ok</html>',
     vendorJs: '/*vendor*/',
+    zxingJs: '/*zxing*/',
     puertoPreferido: 0,
     ...overrides
   })
@@ -48,6 +49,15 @@ describe('servidor de escáner', () => {
     const res = await fetch(`http://127.0.0.1:${puerto}/vendor.js`)
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('/*vendor*/')
+  })
+
+  it('sirve el zxing js', async () => {
+    const { servidor } = crearServidorPrueba()
+    activo = servidor
+    const { puerto } = await servidor.iniciar()
+    const res = await fetch(`http://127.0.0.1:${puerto}/zxing.js`)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('/*zxing*/')
   })
 
   it('rechaza un scan con token inválido y no emite el código', async () => {

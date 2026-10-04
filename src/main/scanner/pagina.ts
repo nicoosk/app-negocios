@@ -60,6 +60,7 @@ export function generarPaginaEscanner(): string {
     </details>
 
     <script src="/vendor.js"></script>
+    <script src="/zxing.js"></script>
     <script>
       var token = new URLSearchParams(location.search).get('t') || '';
       var estado = document.getElementById('estado');
@@ -162,63 +163,101 @@ export function generarPaginaEscanner(): string {
         }
       } catch (e) { addLog('diagnóstico falló: ' + describir(e)); }
 
-      // Decodificación con el BarcodeDetector nativo del navegador, si existe.
-      // Suele ser lo más fiable para códigos 1D en fotos.
-      async function decodificarNativo(file) {
-        if (!('BarcodeDetector' in window)) return null;
-        var soportados = [];
-        if (window.BarcodeDetector.getSupportedFormats) {
-          soportados = await window.BarcodeDetector.getSupportedFormats();
+      // Prepara la foto en un canvas (aplica orientación EXIF y reescala).
+      async function fotoACanvas(file, max) {
+        var bitmap;
+        try {
+          bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        } catch (e) {
+          bitmap = await createImageBitmap(file);
         }
-        var deseados = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'itf', 'codabar', 'qr_code'];
-        var usar = deseados.filter(function (f) { return soportados.indexOf(f) !== -1; });
-        if (!usar.length) { addLog('BarcodeDetector sin formatos útiles'); return null; }
-
-        var bitmap = await createImageBitmap(file);
-        var max = 1600;
         var escala = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
         var ancho = Math.round(bitmap.width * escala);
         var alto = Math.round(bitmap.height * escala);
         var canvas = document.createElement('canvas');
         canvas.width = ancho;
         canvas.height = alto;
-        canvas.getContext('2d').drawImage(bitmap, 0, 0, ancho, alto);
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, ancho, alto);
+        ctx.drawImage(bitmap, 0, 0, ancho, alto);
+        addLog('foto: ' + bitmap.width + 'x' + bitmap.height + ' -> canvas ' + ancho + 'x' + alto);
         if (bitmap.close) bitmap.close();
-        addLog('nativo: canvas ' + ancho + 'x' + alto + ' formatos [' + usar.join(',') + ']');
-
-        var detector = new window.BarcodeDetector({ formats: usar });
-        var encontrados = await detector.detect(canvas);
-        addLog('nativo: detectados ' + encontrados.length);
-        if (!encontrados.length) return null;
-        encontrados.forEach(function (c) { addLog('nativo: ' + c.format + ' = ' + c.rawValue); });
-        return encontrados[0].rawValue;
+        return canvas;
       }
 
-      // Reescala la foto para no procesar imágenes enormes (mejora ZXing).
-      async function escalar(file, max) {
-        var bitmap = await createImageBitmap(file);
-        var escala = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-        addLog('foto original: ' + bitmap.width + 'x' + bitmap.height + ' escala ' + escala.toFixed(2));
-        if (escala >= 1) { if (bitmap.close) bitmap.close(); return file; }
-        var canvas = document.createElement('canvas');
-        canvas.width = Math.round(bitmap.width * escala);
-        canvas.height = Math.round(bitmap.height * escala);
-        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        if (bitmap.close) bitmap.close();
-        var blob = await new Promise(function (resolver) { canvas.toBlob(resolver, 'image/jpeg', 0.92); });
-        return new File([blob], 'foto.jpg', { type: 'image/jpeg' });
+      function rotar(origen, grados) {
+        if (grados === 0) return origen;
+        var lienzo = document.createElement('canvas');
+        if (grados === 90 || grados === 270) {
+          lienzo.width = origen.height;
+          lienzo.height = origen.width;
+        } else {
+          lienzo.width = origen.width;
+          lienzo.height = origen.height;
+        }
+        var ctx = lienzo.getContext('2d');
+        ctx.translate(lienzo.width / 2, lienzo.height / 2);
+        ctx.rotate(grados * Math.PI / 180);
+        ctx.drawImage(origen, -origen.width / 2, -origen.height / 2);
+        return lienzo;
+      }
+
+      // Decodifica con el ZXing que trae html5-qrcode, usando TRY_HARDER,
+      // dos binarizaciones y rotaciones. Es lo más fiable para barcodes 1D.
+      function decodificarConZXing(canvas) {
+        var hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+          ZXing.BarcodeFormat.EAN_13,
+          ZXing.BarcodeFormat.EAN_8,
+          ZXing.BarcodeFormat.UPC_A,
+          ZXing.BarcodeFormat.UPC_E,
+          ZXing.BarcodeFormat.CODE_128,
+          ZXing.BarcodeFormat.CODE_39,
+          ZXing.BarcodeFormat.CODE_93,
+          ZXing.BarcodeFormat.ITF,
+          ZXing.BarcodeFormat.CODABAR,
+          ZXing.BarcodeFormat.QR_CODE
+        ]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        var binarizadores = [
+          function (f) { return new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(f)); },
+          function (f) { return new ZXing.BinaryBitmap(new ZXing.GlobalHistogramBinarizer(f)); }
+        ];
+        var angulos = [0, 90, 180, 270];
+        var ultimoError = null;
+        for (var a = 0; a < angulos.length; a++) {
+          var lienzo = rotar(canvas, angulos[a]);
+          for (var b = 0; b < binarizadores.length; b++) {
+            try {
+              var lector = new ZXing.MultiFormatReader(false, hints);
+              var bitmap = binarizadores[b](new ZXing.HTMLCanvasElementLuminanceSource(lienzo));
+              var resultado = lector.decode(bitmap);
+              addLog('zxing ok (ángulo ' + angulos[a] + ')');
+              return resultado.text;
+            } catch (e) { ultimoError = e; }
+          }
+        }
+        try {
+          var invertido = new ZXing.InvertedLuminanceSource(
+            new ZXing.HTMLCanvasElementLuminanceSource(canvas));
+          var lectorInv = new ZXing.MultiFormatReader(false, hints);
+          var resInv = lectorInv.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(invertido)));
+          addLog('zxing ok (invertido)');
+          return resInv.text;
+        } catch (e) { ultimoError = e; }
+        throw ultimoError || new Error('sin coincidencias');
       }
 
       async function decodificarFoto(file) {
-        try {
-          var nativo = await decodificarNativo(file);
-          if (nativo) return nativo;
-        } catch (e) {
-          addLog('decoder nativo falló: ' + describir(e));
+        var canvas = await fotoACanvas(file, 1600);
+        if (typeof ZXing !== 'undefined') {
+          addLog('decodificando con ZXing (TRY_HARDER + rotaciones)…');
+          return decodificarConZXing(canvas);
         }
-        var reducida = await escalar(file, 1600);
-        addLog('probando ZXing (scanFile)…');
-        return await lector.scanFile(reducida, false);
+        addLog('ZXing no disponible, usando html5-qrcode');
+        var blob = await new Promise(function (r) { canvas.toBlob(r, 'image/jpeg', 0.95); });
+        return await lector.scanFile(new File([blob], 'foto.jpg', { type: 'image/jpeg' }), false);
       }
 
       function caja(vw) {
