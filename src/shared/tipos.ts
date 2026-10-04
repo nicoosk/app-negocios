@@ -38,6 +38,15 @@ export interface ResultadoEscaneo {
   nuevo: boolean
 }
 
+// Estado del servidor local que sirve la página de escaneo al celular.
+export interface EstadoEscaner {
+  activo: boolean
+  conectado: boolean
+  conectados: number
+  url: string | null
+  qr: string | null
+}
+
 export interface LineaCarrito {
   producto_id: number | null
   nombre: string

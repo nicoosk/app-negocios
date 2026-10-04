@@ -99,7 +99,7 @@ function migraciones(db: DatabaseType): Migracion[] {
         if (!columnasUsuarios.some((c) => c.name === 'is_admin')) {
           db.exec('ALTER TABLE usuarios ADD COLUMN is_admin INTEGER DEFAULT 0')
           db.prepare(`UPDATE usuarios SET is_admin = 1 WHERE username = 'admin'`).run()
-          console.log("[db : migrations] v1: columna 'is_admin' agregada a usuarios")
+          console.log("[db] v1: columna 'is_admin' agregada a usuarios")
         }
 
         const columnasFiadosDetalle = db.pragma('table_info(fiados_detalle)') as {
@@ -107,7 +107,7 @@ function migraciones(db: DatabaseType): Migracion[] {
         }[]
         if (!columnasFiadosDetalle.some((c) => c.name === 'id_usuario')) {
           db.exec('ALTER TABLE fiados_detalle ADD COLUMN id_usuario INTEGER NOT NULL DEFAULT 1')
-          console.log("[db : migrations] v1: columna 'id_usuario' agregada a fiados_detalle")
+          console.log("[db] v1: columna 'id_usuario' agregada a fiados_detalle")
         }
 
         const usuariosPrueba = db
@@ -119,7 +119,7 @@ function migraciones(db: DatabaseType): Migracion[] {
             db.prepare('UPDATE fiados_detalle SET id_usuario = 1 WHERE id_usuario = ?').run(u.id)
           }
           db.prepare(`DELETE FROM usuarios WHERE username = 'Prueba' AND pin = '0000'`).run()
-          console.log('[db : migrations] v1: usuario "Prueba" eliminado y movimientos reasignados')
+          console.log('[db] v1: usuario "Prueba" eliminado y movimientos reasignados')
         }
       }
     },
@@ -130,7 +130,7 @@ function migraciones(db: DatabaseType): Migracion[] {
         const columnasVentas = db.pragma('table_info(ventas)') as { name: string }[]
         if (!columnasVentas.some((c) => c.name === 'id_usuario')) {
           db.exec('ALTER TABLE ventas ADD COLUMN id_usuario INTEGER REFERENCES usuarios(id)')
-          console.log("[db : migrations] v2: columna 'id_usuario' agregada a ventas")
+          console.log("[db] v2: columna 'id_usuario' agregada a ventas")
         }
       }
     },
@@ -141,7 +141,7 @@ function migraciones(db: DatabaseType): Migracion[] {
         const columnasProductos = db.pragma('table_info(productos)') as { name: string }[]
         if (!columnasProductos.some((c) => c.name === 'es_nuevo')) {
           db.exec('ALTER TABLE productos ADD COLUMN es_nuevo INTEGER NOT NULL DEFAULT 0')
-          console.log("[db : migrations] v3: columna 'es_nuevo' agregada a productos")
+          console.log("[db] v3: columna 'es_nuevo' agregada a productos")
         }
       }
     }
@@ -155,7 +155,6 @@ function aplicarMigraciones(db: DatabaseType): void {
     .sort((a, b) => a.version - b.version)
 
   if (pendientes.length === 0) {
-    console.log('[db : migrations] Sin migraciones pendientes')
     return
   }
 
@@ -165,9 +164,9 @@ function aplicarMigraciones(db: DatabaseType): void {
         m.up()
         db.pragma(`user_version = ${m.version}`)
       })()
-      console.log(`[db : migrations] Aplicada v${m.version}: ${m.descripcion}`)
+      console.log(`[db] Migración aplicada v${m.version}: ${m.descripcion}`)
     } catch (err) {
-      console.error(`[db : migrations] Error aplicando v${m.version}: ${m.descripcion}`)
+      console.error(`[db] Error aplicando v${m.version}: ${m.descripcion}`)
       console.error(err)
       throw err
     }
@@ -179,18 +178,13 @@ export function aplicarEsquema(db: DatabaseType): void {
 
   // Bootstrap del administrador antes de las migraciones para garantizar que exista el usuario id = 1
   const count = db.prepare('SELECT COUNT(*) as c FROM usuarios').get() as { c: number }
-  console.log('Usuarios en DB:', count.c)
   if (count.c === 0) {
     db.prepare('INSERT INTO usuarios (username, pin, is_admin) VALUES (?, ?, ?)').run(
       'admin',
       '1234',
       1
     )
-    console.log('Usuario admin creado')
   }
 
   aplicarMigraciones(db)
-
-  const productCount = db.prepare('SELECT COUNT(*) as c FROM productos').get() as { c: number }
-  console.log('Productos registrados:', productCount.c)
 }

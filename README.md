@@ -4,20 +4,24 @@ An Electron application with React and TypeScript
 
 ## Estado del proyecto
 
-### Cambio pendiente: códigos de barra
+### Lectura de códigos de barra
 
-**La lectura de códigos de barras NO está implementada en la app.** No hay forma de escanear un
-producto: el formulario de producto tiene el campo de código de barras deshabilitado con el badge
-"No soportado", y el flujo de venta solo permite buscar por nombre.
+La app incluye un escáner de códigos de barra por celular. Desde el Panel de ventas o el Inventario
+se abre el modal **Conectar escáner**, que muestra un QR con la URL del servidor local. El celular
+(misma red Wi-Fi que el PC) abre esa página, escanea el código y este llega al PC en tiempo real.
 
-Existe un trabajo parcial estacionado en la rama `wip/codigos-de-barra` con la capa de datos
-(`es_nuevo`, `buscarPorCodigoBarra`, `contarProductosNuevos`, `resolverProductoNuevo`) y sus tres
-canales IPC. **No se debe mergear tal cual**: ninguna de esas funciones se usa desde el renderer, y
-tiene defectos conocidos (el más grave: al escanear un código desconocido crea un producto con
-nombre vacío y precio 0, ensuciando el inventario de forma permanente).
+- El servidor local se sirve por **HTTPS con certificado autofirmado** (generado y persistido en el
+  PC), porque la cámara en vivo (`getUserMedia`) solo funciona en contexto seguro. La primera vez el
+  celular avisa que la conexión no es segura: hay que aceptar el aviso ("Mostrar detalles" → "Visitar
+  este sitio") o instalar el certificado desde el enlace de la propia página (`/certificado.crt`).
+- La lectura de la foto usa **ZBar (WebAssembly)** como decodificador 1D principal (rápido y fiable
+  con EAN/UPC/Code128) y **ZXing** como respaldo. También hay entrada manual de código.
+- Si el código no existe, se crea un producto **pendiente** (`es_nuevo = 1`) sin nombre ni precio.
+  El badge del Sidebar y del Inventario muestra cuántos hay por completar.
+- Al guardar un precio mayor a 0, el producto deja de ser pendiente y queda disponible para vender.
 
-El detalle completo de qué falta y qué corregir está en el
-[README de la rama `wip/codigos-de-barra`](https://github.com/nicoosk/app-negocios/blob/wip/codigos-de-barra/README.md).
+La capa de datos (`es_nuevo`, `escanear`, `resolverNuevo`, `contarNuevos`) y el servidor HTTP local
+viven en el proceso main (`src/main/scanner/` y `src/main/nucleo/`) y están cubiertos por tests.
 
 ## Recommended IDE Setup
 
@@ -35,6 +39,15 @@ $ pnpm install
 
 ```bash
 $ pnpm dev
+```
+
+### Tests
+
+`better-sqlite3` está compilado para el ABI de Electron, así que los tests se ejecutan con Electron
+en modo Node:
+
+```bash
+$ ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron node_modules/vitest/vitest.mjs run
 ```
 
 ### Build

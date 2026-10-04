@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, shell, type IpcRendererEvent } from 'electron'
 import type {
+  EstadoEscaner,
   FiadoDetalleAdmin,
   FiadoHoy,
   HistorialFiado,
@@ -26,7 +27,7 @@ export interface Api {
   fiados: {
     buscar: (query: string) => Promise<ResumenFiado[]>
     registrar: (nombre: string, monto: number, lineas: LineaCarrito[]) => Promise<RespuestaApi>
-    hoy: () => Promise<{ fios: FiadoHoy[]; total: number; deudores: number }>
+    hoy: () => Promise<{ fiados: FiadoHoy[]; total: number; deudores: number }>
     total: () => Promise<{ total: number }>
     todos: () => Promise<ResumenFiado[]>
     abonar: (id: number, monto: number) => Promise<RespuestaApi>
@@ -101,6 +102,12 @@ export interface Api {
       stock: number,
       unidad: string
     ) => Promise<RespuestaApi>
+  }
+  scanner: {
+    estado: () => Promise<EstadoEscaner>
+    iniciar: () => Promise<EstadoEscaner>
+    detener: () => Promise<EstadoEscaner>
+    onCodigo: (cb: (codigo: string) => void) => () => void
   }
 }
 
@@ -187,6 +194,16 @@ const api: Api = {
     contarNuevos: () => ipcRenderer.invoke('productos:contarNuevos'),
     resolverNuevo: (id, nombre, precio_venta, stock, unidad) =>
       ipcRenderer.invoke('productos:resolverNuevo', id, nombre, precio_venta, stock, unidad)
+  },
+  scanner: {
+    estado: () => ipcRenderer.invoke('scanner:estado'),
+    iniciar: () => ipcRenderer.invoke('scanner:iniciar'),
+    detener: () => ipcRenderer.invoke('scanner:detener'),
+    onCodigo: (cb) => {
+      const handler = (_e: IpcRendererEvent, codigo: string): void => cb(codigo)
+      ipcRenderer.on('scanner:codigo', handler)
+      return () => ipcRenderer.removeListener('scanner:codigo', handler)
+    }
   }
 }
 

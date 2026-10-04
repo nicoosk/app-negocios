@@ -10,10 +10,13 @@ This document is for AI assistants making changes in this repository. Keep edits
 - Language/domain: UI and business naming are Spanish (`ventas`, `fiados`, `deudores`, etc.).
 
 ## Repository structure
-- `src/main/`: Electron main process (window lifecycle + IPC handlers + DB integration).
-- `src/preload/`: secure API bridge (`contextBridge`) exposed to renderer as `window.api`.
+- `src/main/`: Electron main process (window lifecycle, IPC, DB integration).
+  - `src/main/nucleo/`: domain logic + SQLite (`nucleo.ts`, `esquema.ts`), testable with `:memory:`.
+  - `src/main/ipc/`: IPC handlers (`index.ts`) and input validation (`validacion.ts`).
+  - `src/main/scanner/`: local HTTP server + mobile scan page (barcode scanner).
+- `src/preload/`: secure API bridge (`contextBridge`) exposed to renderer as `window.api` (`api.ts`).
 - `src/renderer/src/`: React UI, CSS Modules, and client-side interaction logic.
-- `src/main/db.ts`: schema + SQL operations (users, sales, debts, debt history).
+- `src/shared/`: domain/IPC types shared across main, preload and renderer (`tipos.ts`, `constantes.ts`).
 
 ## Build/dev/tooling
 - Package manager: `pnpm` (lockfile: `pnpm-lock.yaml`).
@@ -55,9 +58,9 @@ CSS conventions:
 ### Process boundaries
 - Renderer should not access Node/Electron internals directly.
 - New privileged operations must go through:
-  1. `ipcMain.handle(...)` in `src/main/index.ts`
-  2. mirrored `ipcRenderer.invoke(...)` wrappers in `src/preload/index.ts`
-  3. typings in `src/preload/index.d.ts`
+  1. `ipcMain.handle(...)` in `src/main/ipc/index.ts`
+  2. mirrored `ipcRenderer.invoke(...)` wrappers in `src/preload/api.ts`
+  3. typings in `src/preload/index.d.ts` and shared types in `src/shared/tipos.ts`
   4. consumption via `window.api...` in renderer
 
 ### IPC naming patterns
@@ -69,7 +72,7 @@ Follow the existing `<namespace>:<action>` convention:
 Keep naming domain-consistent and in Spanish where applicable.
 
 ### Data layer
-- DB access lives in `src/main/db.ts` (main process side).
+- DB access lives in `src/main/nucleo/` (schema in `esquema.ts`, operations in `nucleo.ts`).
 - Use parameterized queries (`?`) with `prepare().run/get/all`.
 - Reuse existing table semantics:
   - `ventas`
@@ -99,26 +102,15 @@ Keep naming domain-consistent and in Spanish where applicable.
 - Preserve existing SQL style and ordering patterns (`ORDER BY ... DESC`, explicit limits, `COALESCE`).
 - Validate edge cases: empty results, zero totals, missing records, and negative/invalid inputs.
 
-## GitHub Actions workflow (`.github/workflows/build.yml`)
-This workflow orchestrates validation, release preparation, and branch synchronization:
-
-- On push to `dev`:
-  - runs `typecheck` (`pnpm typecheck`).
-  - if successful, runs `create-pr` to open/update a PR from `dev` to `main`.
-
-- On push to `main` (typically after merge):
-  - runs `sync-dev`.
-  - checks out `dev`, rebases onto `origin/main`, and force-pushes with lease.
-  - purpose: keep `dev` aligned with current `main` head.
-
-- On push of tags matching `v*`:
-  - runs `build-mac` and `build-win`.
-  - uploads build artifacts (`.dmg` and `.exe`).
-  - then runs `release`, downloads artifacts, and publishes a GitHub release using:
-    - release name based on tag.
-    - customizable release body.
-    - attached binaries produced by Mac/Windows build jobs.
-    - prerelease flag for tags containing `alpha` or `beta`.
+## GitHub Actions workflows (`.github/workflows/`)
+- `ci.yml` — en cada push a `dev` y en cada PR hacia `main` corre el job `verify`:
+  `pnpm typecheck`, `pnpm lint`, tests con Electron-as-node
+  (`ELECTRON_RUN_AS_NODE=1 ... vitest run`) y `electron-vite build` sin empaquetar.
+  Este es el check requerido por el ruleset de `main`.
+- `sync-dev.yml` — tras un push a `main`, rebasa `dev` sobre `origin/main` y hace
+  `push --force-with-lease` para dejar `dev` alineada con `main`.
+- `release.yml` — al empujar un tag `v*`, compila macOS y Windows y publica un
+  GitHub Release (prerelease si el tag contiene `alpha` o `beta`).
 
 ## Anti-slop rules (important)
 - Do not perform broad refactors unless requested.
@@ -131,10 +123,13 @@ This workflow orchestrates validation, release preparation, and branch synchroni
 ## Known quirks to respect
 - `fiados:buscar` preload signature accepts `query`, while current main handler ignores it and returns full list. Keep compatibility in mind when editing.
 - Login/database logs exist in code; only alter logging behavior if task requires it.
-- There are currently no project test scripts configured in `package.json`; use lint/typecheck as baseline validation.
+- Tests live next to their modules (`*.test.ts`) and must run with Electron-as-node
+  (`ELECTRON_RUN_AS_NODE=1 ... vitest run`); plain `pnpm test` won't work because `better-sqlite3`
+  is built for Electron's ABI.
 
 ## Definition of done for assistant edits
 - Changes are minimal, targeted, and architecture-consistent.
 - TypeScript types are coherent across main/preload/renderer boundaries.
 - Domain language and naming stay consistent with existing code.
-- `pnpm lint` and `pnpm typecheck` pass (or any failure is explained with exact cause).
+- `pnpm lint`, `pnpm typecheck`, the Electron-as-node test suite, and `electron-vite build` pass
+  (or any failure is explained with exact cause).

@@ -4,27 +4,14 @@ import AppShell from './shell/AppShell'
 import { Sesion } from './types'
 
 function App(): React.JSX.Element {
-  const [loggedIn, setLoggedIn] = useState<boolean>(false)
-  const [user, setUser] = useState<Sesion>({
-    id: 0,
-    username: 'Indefinido',
-    is_admin: false
-  })
+  const [user, setUser] = useState<Sesion | null>(null)
 
   const cerrarSesion = (): void => {
     void window.api.logout()
-    setLoggedIn(false)
+    setUser(null)
   }
 
-  if (!loggedIn)
-    return (
-      <Login
-        onSuccess={(user: Sesion) => {
-          setUser(user)
-          setLoggedIn(true)
-        }}
-      />
-    )
+  if (!user) return <Login onSuccess={setUser} />
   return <AppShell user={user} onLogout={cerrarSesion} />
 }
 
