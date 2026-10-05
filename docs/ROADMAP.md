@@ -12,7 +12,9 @@
   `nicoosk`. Los PRs deben ser **autoría `nicoosk-bot`** (el ruleset exige que los commits estén
   atribuidos al autor del PR).
 - Remote `origin` = `git@github-nicoosk-bot:nicoosk/app-negocios.git`.
-- Identidad git local del repo = `nicoosk-bot <(cuenta noreply del bot)>`.
+- Identidad git del repo = `nicoosk-bot <nicoosk-bot@users.noreply.github.com>`.
+- **El repo es público**: nunca commitear correos reales, hostnames ni rutas personales. Toda
+  identidad va con direcciones `users.noreply.github.com`.
 - Verificación de cada entrega: `pnpm typecheck`, `pnpm lint`, tests Electron-as-node y
   `npx electron-vite build`.
 
@@ -93,17 +95,22 @@ locales → sync**.
   3. **Multi-local con sync en nube** (elegido a futuro): servidor + Postgres y sincronización;
      implica reescribir la capa de datos.
 
-## Siguiente iteración — Bitácora de auditoría (logs)
+## Siguiente iteración — Bitácora de auditoría (ampliar `auditoria`, no crear `bitacora`)
 
-Pedido del usuario: un sistema de logs **dentro de la app** para facilitar los procesos de auditoría.
+> Corrección: la tabla **`auditoria` ya existe** (`esquema.ts`, `nucleo.ts`, con escritura desde la
+> capa IPC y una pestaña de lectura en `PanelAdmin`). No hay que crear una tabla `bitacora`: sería
+> un duplicado. Ver `docs/AUDITORIA-2026-10-04.md` para el detalle de lo que falta.
 
-- Tabla `bitacora(id, fecha, hora, id_usuario, accion, entidad, id_entidad, detalle)` agregada en
-  `esquema.ts` (migración v5).
-- Se escribe desde el núcleo (`crearBitacora(db)`): alta/edición/baja de productos, ventas, fiados,
-  usuarios y sesión (apertura/cierre).
-- Lectura: `bitacora.listar(filtros)` + IPC `bitacora:listar` y una pantalla de solo lectura con
-  filtros por usuario, acción, entidad y rango de fechas.
-- A definir: retención (podado por antigüedad) y exportación a CSV.
+Lo que realmente le falta a `auditoria` para servir de bitácora:
+
+- **Filtros** por usuario, acción, entidad y rango de fechas (`listar()` solo acepta `limit`).
+- **Paginación** en lugar del tope fijo de 200 registros.
+- **Exportación a CSV** y política de **retención** (la tabla hoy crece sin límite).
+- **Antes/después**: hoy solo `fiado_editado` guarda el valor anterior; `venta_editada` y
+  `producto_actualizado` no permiten reconstruir qué cambió.
+- **Detalle de las líneas** de la venta (hoy solo `{monto, items: <cantidad>}`) y eventos de stock.
+- **Índice** en `auditoria(fecha)` y `auditoria(accion)`.
+- Registrar también **rechazos de autorización** y los **eventos del escáner**.
 
 ## Archivos clave
 
